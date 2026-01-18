@@ -7,6 +7,7 @@ pub const EnergyManager = @import("../systems/EnergyManager.zig").EnergyManager;
 pub const Movement = @import("../systems/Movement.zig").Movement;
 pub const Render = @import("../systems/Render.zig").Render;
 pub const Track = @import("../systems/Track.zig").Track;
+pub const UpdateStatusBar = @import("../systems/UpdateStatusBar.zig").UpdateStatusBar;
 
 pub const SystemName = enum {
     Animate,
@@ -16,6 +17,7 @@ pub const SystemName = enum {
     Movement,
     Render,
     Track,
+    UpdateStatusBar,
 };
 
 pub const SystemTypes = [_]type {
@@ -26,6 +28,7 @@ pub const SystemTypes = [_]type {
     Movement,
     Render,
     Track,
+    UpdateStatusBar,
 };
 
 pub fn getTypeByName(comptime system_name: SystemName) type {

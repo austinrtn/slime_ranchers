@@ -13,8 +13,10 @@ const PoolInterface = PI.PoolInterfaceType;
 pub const system_sequence = [_]SR.SystemName{
     .Controller,
     .ChangeAnim,
-    .EnergyManager,
     .Movement,
+    .EnergyManager,
+    .UpdateStatusBar,
+    .Animate,
     .Render,
 };
 
@@ -22,7 +24,7 @@ pub const Prescient = struct {
     pub const Entity = EM.Entity;
     pub const GlobalData = Global;
     pub const compTypes = CR.compTypes;
-    pub const comps = CR.ComponentName;
+    pub const compNames = CR.ComponentName;
 
     const Self = @This();
     var _Prescient: *Self = undefined;

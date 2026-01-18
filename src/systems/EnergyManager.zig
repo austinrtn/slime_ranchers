@@ -40,7 +40,6 @@ pub const EnergyManager = struct {
                     slime.state = .idling;
                     energy.energy = 0;
                 }
-                std.debug.print("\nEnergy:{}", .{energy.energy});
             }
         }
     }

@@ -9,15 +9,19 @@ pub const Animate = struct {
 
     // Dependency declarations for compile-time system ordering
     pub const reads = [_]type{};
-    pub const writes = [_]type{};
+    pub const writes = [_]type{.Sprite};
 
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        // Define your queries here
+        sprites: Query(&.{.Sprite}),
     },
 
     pub fn update(self: *Self) !void {
-        _ = self;
+        while(try self.queries.sprites.next()) |b| {
+            for(b.Sprite) |sprite| {
+                sprite.nextFrame();
+            }
+        }
     }
 };

@@ -3,7 +3,7 @@ const raylib = @import("raylib");
 
 pub const Slime = struct {
     const Self = @This();
-    const SlimeType = enum {
+    pub const SlimeType = enum {
         slime1,
         slime2,
         slime3,
@@ -51,9 +51,6 @@ pub const Slime = struct {
         self.attack_texture = try raylib.loadTexture(self.attack_path);
     }
 
-    pub fn getSprite(_: Self) Prescient.compTypes.Sprite {
-        return Prescient.compTypes.Sprite.initFromSpriteSheet(64, 64, 6, 6, 180, 3);
-    }
 };
 const Dirs = struct {
     const main_dir = "assets/main_slimes/PNG/";
