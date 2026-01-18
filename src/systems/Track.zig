@@ -1,0 +1,44 @@
+const std = @import("std");
+const Prescient = @import("../ecs/Prescient.zig").Prescient;
+const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
+const Query = @import("../ecs/Query.zig").QueryType;
+const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
+const Raylib = @import("raylib");
+
+pub const Track = struct {
+    const Self = @This();
+
+    // Dependency declarations for compile-time system ordering
+    pub const reads = [_]type{};
+    pub const writes = [_]type{};
+
+    allocator: std.mem.Allocator,
+    active: bool = true,
+    speed: f32 = 150,
+    queries: struct {
+        objs: Query(&.{.Position, .Velocity}),
+    },
+
+    pub fn update(self: *Self) !void {
+        while(try self.queries.objs.next()) |b| {
+            for(b.Position, b.Velocity) |pos, vel| {
+                const pos_vect = Raylib.Vector2{.x = pos.x, .y = pos.y};
+                const mouse = Raylib.getMousePosition();  
+
+                const dist = Raylib.Vector2.subtract(mouse, pos_vect);
+                const length = Raylib.Vector2.length(dist);
+
+                if(length > 150) {
+                    vel.dx = 0;
+                    vel.dy = 0;
+                    continue;
+                }
+
+                const velocity = Raylib.Vector2.scale(Raylib.Vector2.normalize(dist), self.speed);
+
+                vel.dx = velocity.x;
+                vel.dy = velocity.y;
+            }
+        }
+    }
+};
