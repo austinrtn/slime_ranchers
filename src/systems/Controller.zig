@@ -15,44 +15,61 @@ pub const Controller = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        controllables: Query(&.{.Slime, .Sprite, .Controller, .Velocity, .Speed}),
+        controllables: Query(&.{.Slime, .Sprite, .Controller, .Velocity, .Speed, .Attack}),
     },
 
     pub fn update(self: *Self) !void {
         while(try self.queries.controllables.next()) |b| {
-            for(b.Slime, b.Velocity, b.Speed, b.Sprite) |slime, vel, spd, sprite| {
+            for(b.Slime, b.Velocity, b.Speed, b.Sprite, b.Attack) |slime, vel, spd, sprite, atk| {
                 if(slime.state == .attacking) {
-                    if(sprite.frame_index == sprite.animation_length - 1){
+                    if(sprite.animation_complete) {
                         slime.state = .idling;
+                        atk.recovering = true;
                     }
                 }
-                else if(raylib.isKeyDown(.space) and slime.state != .attacking) {
+                else if(raylib.isKeyDown(.space) and atk.can_attack) {
                     sprite.frame_index = 0;
                     sprite.delay_counter = 0;
+                    sprite.animation_complete = false;
                     slime.state = .attacking;
                 }
-                if(slime.state != .attacking){
+                if(slime.state != .attacking and slime.state != .recovering){
+                    //UP & DOWN
                     if(raylib.isKeyDown(.down)) {
                         vel.dy = spd.*;
                         slime.state = .moving;
                     } 
-                    if(raylib.isKeyDown(.right)) {
-                        vel.dx = spd.*;
+                    else if(raylib.isKeyDown(.up)) {
+                        vel.dy = -1 * spd.*;
                         slime.state = .moving;
                     } 
+                    else {
+                        vel.dy = 0;
+                    }
+                    //LEFT & RIGHT
                     if(raylib.isKeyDown(.left)) {
                         vel.dx = -1 * spd.*;
                         slime.state = .moving;
                     } 
-                    if(raylib.isKeyDown(.up)) {
-                        vel.dy = -1 * spd.*;
+                    else if(raylib.isKeyDown(.right)) {
+                        vel.dx = spd.*;
                         slime.state = .moving;
-                    } 
-                    if (raylib.isKeyUp(.up) and raylib.isKeyUp(.down) and raylib.isKeyUp(.left) and raylib.isKeyUp(.right)) {
-                        vel.dx = 0;
-                        vel.dy = 0;
-                        slime.state = .idling;
                     }
+                    else {
+                        vel.dx = 0;
+                    }
+                }
+                if (
+                    slime.state != .attacking 
+                    and slime.state != .recovering and 
+                    (raylib.isKeyUp(.up) and raylib.isKeyUp(.down) and raylib.isKeyUp(.left) and raylib.isKeyUp(.right))
+                ) {
+                    slime.state = .idling;
+                }
+
+                if(slime.state == .idling or slime.state == .recovering) {
+                    vel.dx = 0;
+                    vel.dy = 0;
                 }
             }
         }

@@ -1,6 +1,7 @@
 const std = @import("std");
 
 pub const Animate = @import("../systems/Animate.zig").Animate;
+pub const Attack = @import("../systems/Attack.zig").Attack;
 pub const ChangeAnim = @import("../systems/ChangeAnim.zig").ChangeAnim;
 pub const Controller = @import("../systems/Controller.zig").Controller;
 pub const EnergyManager = @import("../systems/EnergyManager.zig").EnergyManager;
@@ -11,6 +12,7 @@ pub const UpdateStatusBar = @import("../systems/UpdateStatusBar.zig").UpdateStat
 
 pub const SystemName = enum {
     Animate,
+    Attack,
     ChangeAnim,
     Controller,
     EnergyManager,
@@ -22,6 +24,7 @@ pub const SystemName = enum {
 
 pub const SystemTypes = [_]type {
     Animate,
+    Attack,
     ChangeAnim,
     Controller,
     EnergyManager,

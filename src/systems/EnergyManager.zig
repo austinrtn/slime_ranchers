@@ -21,10 +21,21 @@ pub const EnergyManager = struct {
     pub fn update(self: *Self) !void {
         while(try self.queries.slimes.next()) |b| {
             for(b.Energy, b.Slime) |energy, slime| {
-                if(energy.energy < energy.max_energy and slime.state == .idling) {
+                // Recover energy while idling
+                if(energy.energy < energy.max_energy and (slime.state == .idling or slime.state == .recovering)) {
                     energy.energy += energy.regen_per_frame * raylib.getFrameTime();
                 }
 
+                // Force idle durring recovering state
+                if(slime.state == .recovering) {
+                    if(energy.energy >= energy.min_req){
+                        slime.state = .idling;
+                        break;
+                    }
+                    continue;
+                }
+
+                // Spend Energy While Moving
                 else if(energy.energy > 0 and slime.state == .moving) {
                     const movement_cost = energy.movement_cost * raylib.getFrameTime();
                     if((energy.energy - movement_cost) < 0) {
@@ -33,12 +44,27 @@ pub const EnergyManager = struct {
                     else energy.energy -= movement_cost;
                 }
 
+                // One time energy cost for attack
+                else if(slime.state == .attacking and !energy.attack_reducted) {
+                    std.debug.print("here", .{});
+                    energy.energy -= energy.attack_cost;
+                    energy.attack_reducted = true;
+                }
+
+                //Reset attack reducted flag after attack finished
+                if(slime.state != .attacking and energy.attack_reducted) {
+                    energy.attack_reducted = false;
+                }
+
+                // Keep energy from exceding max
                 if(energy.energy > energy.max_energy) {
                     energy.energy = energy.max_energy;
                 }
+
+                // Keep energy from sub 0
                 if(energy.energy <= 0) {
-                    slime.state = .idling;
                     energy.energy = 0;
+                    slime.state = .recovering;
                 }
             }
         }

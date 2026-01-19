@@ -13,6 +13,7 @@ pub const Slime = struct {
         idling,
         moving,
         attacking,
+        recovering, 
     };
 
     idle_path: [:0]const u8,

@@ -11,10 +11,11 @@ const Global = @import("../Global.zig").Global;
 const PoolInterface = PI.PoolInterfaceType;
 
 pub const system_sequence = [_]SR.SystemName{
+    .EnergyManager,
     .Controller,
+    .Attack,
     .ChangeAnim,
     .Movement,
-    .EnergyManager,
     .UpdateStatusBar,
     .Animate,
     .Render,

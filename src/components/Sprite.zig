@@ -3,6 +3,10 @@ const raylib = @import("raylib");
 const std = @import("std");
 
 pub const Sprite = struct {
+    pub const AnimationMode = enum {
+        looping,  // Animation loops continuously (idle, walk, etc.)
+        once,     // Animation plays once then stops (attack, death, etc.)
+    };
     // Source rectangle from sprite sheet (which frame to draw)
     source: raylib.Rectangle,
 
@@ -20,21 +24,36 @@ pub const Sprite = struct {
     // Animation state
     frame_index: u32 = 0,       // Current animation frame (0 to animation_length-1)
     animation_length: u32 = 1,  // Total frames in this animation
-    animation_delay: u32 = 1,   // Game frames to wait before advancing animation
-    delay_counter: u32 = 0,     // Internal counter for animation timing
+    animation_delay: f32 = 0.1, // Seconds to wait before advancing animation
+    delay_counter: f32 = 0.0,   // Internal counter for animation timing (accumulated time)
+    animation_mode: AnimationMode = .looping,  // Whether animation loops or plays once
+    animation_complete: bool = false,           // Set to true when a .once animation finishes
 
     pub fn nextFrame(self: *@This()) void {
-        // Only advance animation every N game frames
-        self.delay_counter += 1;
+        // Skip if animation is complete (for .once mode)
+        if (self.animation_mode == .once and self.animation_complete) {
+            return;
+        }
+
+        // Accumulate delta time
+        self.delay_counter += raylib.getFrameTime();
         if(self.delay_counter < self.animation_delay) {
             return;
         }
-        self.delay_counter = 0;
+        // Subtract delay to preserve overflow time for smooth animation
+        self.delay_counter -= self.animation_delay;
 
         // Advance to next animation frame
         self.frame_index += 1;
         if(self.frame_index >= self.animation_length) {
-            self.frame_index = 0;
+            if (self.animation_mode == .once) {
+                // For .once animations, stay on the last frame and mark as complete
+                self.frame_index = self.animation_length - 1;
+                self.animation_complete = true;
+            } else {
+                // For .looping animations, wrap to beginning
+                self.frame_index = 0;
+            }
         }
 
         // Calculate position in sprite sheet grid
@@ -53,7 +72,7 @@ pub const Sprite = struct {
         frame_height: f32,
         grid_columns: u32,
         animation_length: u32,
-        animation_delay: u32,
+        animation_delay: f32,
         scale: f32,
     ) @This() {
         return .{

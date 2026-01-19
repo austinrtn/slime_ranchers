@@ -1,5 +1,6 @@
 const std = @import("std");
 
+pub const Attack = @import("../components/Attack.zig").Attack;
 pub const Circle = @import("../components/Circle.zig").Circle;
 pub const Color = @import("../components/Color.zig").Color;
 pub const Controller = @import("../components/Controller.zig").Controller;
@@ -15,6 +16,7 @@ pub const Texture = @import("../components/Texture.zig").Texture;
 pub const Velocity = @import("../components/Velocity.zig").Velocity;
 
 pub const compTypes = struct {
+    pub const Attack = @import("../components/Attack.zig").Attack;
     pub const Circle = @import("../components/Circle.zig").Circle;
     pub const Color = @import("../components/Color.zig").Color;
     pub const Controller = @import("../components/Controller.zig").Controller;
@@ -31,6 +33,7 @@ pub const compTypes = struct {
 };
 
 pub const ComponentName = enum {
+    Attack,
     Circle,
     Color,
     Controller,
@@ -47,6 +50,7 @@ pub const ComponentName = enum {
 };
 
 pub const ComponentTypes = [_]type {
+    Attack,
     Circle,
     Color,
     Controller,

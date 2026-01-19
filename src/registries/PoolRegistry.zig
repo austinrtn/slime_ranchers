@@ -11,16 +11,23 @@ pub const GeneralPool = EntityPool(.{
     .storage_strategy = .SPARSE,
 });
 
+pub const SlimePool = EntityPool(.{
+    .name = .SlimePool,
+    .req = &.{.Position, .Velocity, .Speed, .Slime, .Sprite, .Texture, .Attack},
+    .components = &.{.Controller, .Energy},
+    .storage_strategy = .ARCHETYPE,
+});
+
 // Add more pools below...
 
 pub const PoolName = enum(u32) {
     GeneralPool,
-    // Add more pool names here
+    SlimePool,
 };
 
 pub const pool_types = [_]type{
     GeneralPool,
-    // Add more pools here
+    SlimePool,
 };
 
 pub fn getPoolFromName(comptime pool: PoolName) type {

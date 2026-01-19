@@ -15,27 +15,37 @@ pub const ChangeAnim = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slimes: Query(&.{.Slime, .Velocity, .Texture, .Sprite}),
+        slimes: Query(&.{.Slime, .Texture, .Sprite}),
     },
 
     pub fn update(self: *Self) !void {
         while(try self.queries.slimes.next()) |b| {
-            for(b.Slime, b.Velocity, b.Texture, b.Sprite) |slime, vel, texture, sprite| {
+            for(b.Slime, b.Texture, b.Sprite) |slime, texture, sprite| {
                 if(slime.state == slime.last_state) continue;
 
                 sprite.frame_index = 0;
                 sprite.delay_counter = 0;
-                
-                if(slime.state == .attacking) {
-                    slime.current_texture = slime.attack_texture; 
+                sprite.animation_complete = false;
+
+                if(slime.state == .recovering) {
+                    slime.current_texture = slime.idle_texture;
+                    sprite.tint = raylib.Color.gray;
+                    sprite.animation_mode = .looping;
+                } else {
+                    sprite.tint = raylib.Color.white;
                 }
-                else if(vel.dx != 0 or vel.dy != 0) {
-                    slime.current_texture = slime.moving_texture; 
-                    slime.state = .moving;
-                } 
-                else {
-                    slime.current_texture = slime.idle_texture; 
-                    slime.state = .idling;
+
+                if(slime.state == .attacking) {
+                    slime.current_texture = slime.attack_texture;
+                    sprite.animation_mode = .once;
+                }
+                else if(slime.state == .moving) {
+                    slime.current_texture = slime.moving_texture;
+                    sprite.animation_mode = .looping;
+                }
+                else if(slime.state == .idling){
+                    slime.current_texture = slime.idle_texture;
+                    sprite.animation_mode = .looping;
                 }
                 texture.* = slime.current_texture;
                 slime.last_state = slime.state;

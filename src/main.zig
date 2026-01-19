@@ -2,7 +2,7 @@ const std = @import("std");
 const System = @import("registries/SystemRegistry.zig").SystemName;
 const Prescient = @import("ecs/Prescient.zig").Prescient;
 const raylib = @import("raylib");
-const PlayerSlime = @import("factories/player_slime.zig").PlayerSlime;
+const Slime = @import("factories/player_slime.zig");
 const StatusBar = @import("factories/StatusBar.zig");
 
 pub fn main() !void {
@@ -15,9 +15,11 @@ pub fn main() !void {
 
     //var general_pool = try prescient.getPool(.GeneralPool);
     
-    const player_slime = PlayerSlime{};
+    const player_slime = Slime.PlayerSlime{};
 
-    const player = try player_slime.spawn(.{.x = 400, .y = 400});
+    const player = try player_slime.spawn(.{.x = 400, .y = 400}, .slime1, true);
+    //_ = try player_slime.spawn(.{.x = 50, .y = 50}, .slime2, false); 
+
     const status_bar = try StatusBar.EnergyStatusBar.spawn(player);
     _ = status_bar;
 
