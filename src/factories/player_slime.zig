@@ -61,6 +61,7 @@ pub const PlayerSlime = struct {
                 .Controller = .{},
                 .Energy = self.energy,
                 .Attack = self.attack,
+                .Collidable = .{ .width = 28, .height = 28 }, 
             });
         }
         else {
@@ -80,6 +81,7 @@ pub const PlayerSlime = struct {
                 ),
                 .Attack = self.attack,
                 .Speed = self.speed,
+                .Collidable = .{ .width = 28, .height = 28 }, 
             });
         }
     }

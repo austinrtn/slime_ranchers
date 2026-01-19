@@ -13,8 +13,8 @@ pub const GeneralPool = EntityPool(.{
 
 pub const SlimePool = EntityPool(.{
     .name = .SlimePool,
-    .req = &.{.Position, .Velocity, .Speed, .Slime, .Sprite, .Texture, .Attack},
-    .components = &.{.Controller, .Energy},
+    .req = &.{.Position, .Velocity, .Speed, .Slime, .Sprite, .Texture, .Attack, .Collidable},
+    .components = &.{.Controller, .Energy, },
     .storage_strategy = .ARCHETYPE,
 });
 

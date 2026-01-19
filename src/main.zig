@@ -18,7 +18,7 @@ pub fn main() !void {
     const player_slime = Slime.PlayerSlime{};
 
     const player = try player_slime.spawn(.{.x = 400, .y = 400}, .slime1, true);
-    //_ = try player_slime.spawn(.{.x = 50, .y = 50}, .slime2, false); 
+    _ = try player_slime.spawn(.{.x = 50, .y = 50}, .slime2, false); 
 
     const status_bar = try StatusBar.EnergyStatusBar.spawn(player);
     _ = status_bar;

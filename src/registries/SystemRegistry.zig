@@ -3,6 +3,7 @@ const std = @import("std");
 pub const Animate = @import("../systems/Animate.zig").Animate;
 pub const Attack = @import("../systems/Attack.zig").Attack;
 pub const ChangeAnim = @import("../systems/ChangeAnim.zig").ChangeAnim;
+pub const Collision = @import("../systems/Collision.zig").Collision;
 pub const Controller = @import("../systems/Controller.zig").Controller;
 pub const EnergyManager = @import("../systems/EnergyManager.zig").EnergyManager;
 pub const Movement = @import("../systems/Movement.zig").Movement;
@@ -14,6 +15,7 @@ pub const SystemName = enum {
     Animate,
     Attack,
     ChangeAnim,
+    Collision,
     Controller,
     EnergyManager,
     Movement,
@@ -26,6 +28,7 @@ pub const SystemTypes = [_]type {
     Animate,
     Attack,
     ChangeAnim,
+    Collision,
     Controller,
     EnergyManager,
     Movement,

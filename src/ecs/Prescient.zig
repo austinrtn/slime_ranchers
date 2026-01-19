@@ -17,6 +17,7 @@ pub const system_sequence = [_]SR.SystemName{
     .Attack,
     .ChangeAnim,
     .Movement,
+    .Collision,
     .UpdateStatusBar,
     .Animate,
     .Render,
