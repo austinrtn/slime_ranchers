@@ -21,11 +21,11 @@ pub const Render = struct {
     frames_per_animation: u32 = 60,  // Update animation every 10 frames (~6 FPS)
 
     queries: struct {
-        textures: Query(&.{.Position, .Texture}),
-        sprites: Query(&.{.Position, .Texture, .Sprite}),
-        rectangles: Query(&.{.Position, .Rectangle, .Color}),
-        circles: Query(&.{.Position, .Circle, .Color}),
-        status_bars: Query(&.{.Position, .StatusBar, .Color}),
+        textures: Query(.{ .comps = &.{.Position, .Texture} }),
+        sprites: Query(.{ .comps = &.{.Position, .Texture, .Sprite} }),
+        rectangles: Query(.{ .comps = &.{.Position, .Rectangle, .Color} }),
+        circles: Query(.{ .comps = &.{.Position, .Circle, .Color} }),
+        status_bars: Query(.{ .comps = &.{.Position, .StatusBar, .Color} }),
     },
 
     pub fn init(self: *Self) !void {

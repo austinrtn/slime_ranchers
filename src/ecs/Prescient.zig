@@ -7,6 +7,7 @@ const PM = @import("PoolManager.zig");
 const SM = @import("SystemManager.zig");
 const PI = @import("PoolInterface.zig");
 const Query = @import("Query.zig").QueryType;
+const QueryConfig = @import("QueryTypes.zig").QueryConfig;
 const Global = @import("../Global.zig").Global;
 const PoolInterface = PI.PoolInterfaceType;
 
@@ -100,12 +101,12 @@ pub const Prescient = struct {
         return self._system_manager.isSystemActive(system);
     }
 
-    pub fn getQuery(self: *Self, comptime components: []const CR.ComponentName) !Query(components) {
-        return Query(components).init(self._allocator, self._pool_manager);
+    pub fn getQuery(self: *Self, comptime config: QueryConfig) !Query(config) {
+        return Query(config).init(self._allocator, self._pool_manager);
     }
 
-    pub fn queryPool(self: *Self, comptime pool: PR.PoolName) !Query(PR.getPoolFromName(pool).COMPONENTS) {
-        return Query(PR.getPoolFromName(pool).COMPONENTS).init(self._allocator, self._pool_manager);
+    pub fn queryPool(self: *Self, comptime pool: PR.PoolName) !Query(.{ .comps = PR.getPoolFromName(pool).COMPONENTS }) {
+        return Query(.{ .comps = PR.getPoolFromName(pool).COMPONENTS }).init(self._allocator, self._pool_manager);
     }
 };
 

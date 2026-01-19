@@ -15,7 +15,7 @@ pub const Attack = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slime: Query(&.{.Slime, .Attack, .Energy},)
+        slime: Query(.{ .comps = &.{.Slime, .Attack, .Energy} }),
     },
 
     pub fn update(self: *Self) !void {

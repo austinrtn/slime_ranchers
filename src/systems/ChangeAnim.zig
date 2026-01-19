@@ -15,7 +15,7 @@ pub const ChangeAnim = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slimes: Query(&.{.Slime, .Texture, .Sprite}),
+        slimes: Query(.{ .comps = &.{.Slime, .Texture, .Sprite} }),
     },
 
     pub fn update(self: *Self) !void {

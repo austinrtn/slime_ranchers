@@ -15,7 +15,7 @@ pub const Controller = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        controllables: Query(&.{.Slime, .Sprite, .Controller, .Velocity, .Speed, .Attack}),
+        controllables: Query(.{ .comps = &.{.Slime, .Sprite, .Controller, .Velocity, .Speed, .Attack} }),
     },
 
     pub fn update(self: *Self) !void {

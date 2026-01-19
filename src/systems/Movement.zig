@@ -15,7 +15,7 @@ pub const Movement = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        objs: Query(&.{.Position, .Velocity}),
+        objs: Query(.{ .comps = &.{.Position, .Velocity} }),
     },
 
     pub fn update(self: *Self) !void {

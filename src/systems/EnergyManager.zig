@@ -15,7 +15,7 @@ pub const EnergyManager = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slimes: Query(&.{.Energy, .Slime})
+        slimes: Query(.{ .comps = &.{.Energy, .Slime} }),
     },
 
     pub fn update(self: *Self) !void {

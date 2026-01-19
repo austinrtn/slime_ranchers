@@ -14,7 +14,7 @@ pub const Animate = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        sprites: Query(&.{.Sprite}),
+        sprites: Query(.{ .comps = &.{.Sprite} }),
     },
 
     pub fn update(self: *Self) !void {

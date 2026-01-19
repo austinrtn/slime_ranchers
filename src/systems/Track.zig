@@ -16,7 +16,7 @@ pub const Track = struct {
     active: bool = true,
     speed: f32 = 150,
     queries: struct {
-        objs: Query(&.{.Position, .Velocity}),
+        objs: Query(.{ .comps = &.{.Position, .Velocity} }),
     },
 
     pub fn update(self: *Self) !void {
