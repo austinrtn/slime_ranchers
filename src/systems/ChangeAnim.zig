@@ -15,12 +15,12 @@ pub const ChangeAnim = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slimes: Query(.{ .comps = &.{.Slime, .Texture, .Sprite} }),
+        slimes: Query(.{ .comps = &.{.Slime, .Texture, .Sprite, .BoundingBox} }),
     },
 
     pub fn update(self: *Self) !void {
         while(try self.queries.slimes.next()) |b| {
-            for(b.Slime, b.Texture, b.Sprite) |slime, texture, sprite| {
+            for(b.Slime, b.Texture, b.Sprite, b.BoundingBox) |slime, texture, sprite, bbox| {
                 if(slime.state == slime.last_state) continue;
 
                 sprite.frame_index = 0;
@@ -42,10 +42,12 @@ pub const ChangeAnim = struct {
                 else if(slime.state == .moving) {
                     slime.current_texture = slime.moving_texture;
                     sprite.animation_mode = .looping;
+                    bbox.height = 18;
                 }
                 else if(slime.state == .idling){
                     slime.current_texture = slime.idle_texture;
                     sprite.animation_mode = .looping;
+                    bbox.height = 16;
                 }
                 texture.* = slime.current_texture;
                 slime.last_state = slime.state;

@@ -24,7 +24,7 @@ pub const Collision = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slimes: Query(.{.comps = &.{.Position, .Slime, .Sprite, .Collidable}})
+        slimes: Query(.{.comps = &.{.Position, .Slime, .Sprite, .BoundingBox}})
     },
 
     pub fn update(self: *Self) !void {
@@ -34,40 +34,40 @@ pub const Collision = struct {
 
         // Gather all collidable entities with their bounding boxes
         while (try self.queries.slimes.next()) |b| {
-            for (b.entities, b.Position, b.Sprite, b.Collidable) |entity_id, pos, sprite, collidable| {
-                if (!collidable.active) continue;
+            for (b.entities, b.Position, b.Sprite, b.BoundingBox) |entity_id, pos, sprite, bbox| {
+                if (!bbox.active) continue;
 
-                // Calculate bounding box dimensions
-                // Use custom collidable dimensions if set, otherwise use full sprite frame
-                const unscaled_width = if (collidable.width > 0) collidable.width else sprite.source.width;
-                const unscaled_height = if (collidable.height > 0) collidable.height else sprite.source.height;
+                // Calculate bounding box dimensions using configuration fields
+                // Use custom bbox dimensions if set, otherwise use full sprite frame
+                const unscaled_width = if (bbox.width > 0) bbox.width else sprite.source.width;
+                const unscaled_height = if (bbox.height > 0) bbox.height else sprite.source.height;
 
                 const width = unscaled_width * sprite.scale;
                 const height = unscaled_height * sprite.scale;
 
                 // Position is where the sprite origin/pivot is placed
                 // Calculate where the collision box center should be
-                const collision_center_x = pos.x + (collidable.offset_x * sprite.scale);
-                const collision_center_y = pos.y + (collidable.offset_y * sprite.scale);
+                const collision_center_x = pos.x + (bbox.offset_x * sprite.scale);
+                const collision_center_y = pos.y + (bbox.offset_y * sprite.scale);
 
                 // Calculate top-left corner of collision box
                 const bbox_x = collision_center_x - (width / 2.0);
                 const bbox_y = collision_center_y - (height / 2.0);
 
-                // Draw debug collision box
-                raylib.drawRectangleLinesEx(
-                    .{ .x = bbox_x, .y = bbox_y, .width = width, .height = height },
-                    2.0,
-                    .red
-                );
+                // WRITE computed bounding box data to component for other systems
+                bbox.bbox_x = bbox_x;
+                bbox.bbox_y = bbox_y;
+                bbox.bbox_width = width;
+                bbox.bbox_height = height;
 
+                // Use computed values for collision detection
                 try entities.append(self.allocator, .{
                     .id = entity_id,
-                    .x = bbox_x,
-                    .y = bbox_y,
-                    .width = width,
-                    .height = height,
-                    .active = collidable.active,
+                    .x = bbox.bbox_x,
+                    .y = bbox.bbox_y,
+                    .width = bbox.bbox_width,
+                    .height = bbox.bbox_height,
+                    .active = bbox.active,
                 });
             }
         }

@@ -19,6 +19,7 @@ pub const Render = struct {
     frame: u32 = 0,
     frame_counter: u32 = 0,
     frames_per_animation: u32 = 60,  // Update animation every 10 frames (~6 FPS)
+    render_bounding_boxes: bool = false,
 
     queries: struct {
         textures: Query(.{ .comps = &.{.Position, .Texture} }),
@@ -26,6 +27,7 @@ pub const Render = struct {
         rectangles: Query(.{ .comps = &.{.Position, .Rectangle, .Color} }),
         circles: Query(.{ .comps = &.{.Position, .Circle, .Color} }),
         status_bars: Query(.{ .comps = &.{.Position, .StatusBar, .Color} }),
+        bounding_boxes: Query(.{.comps = &.{.BoundingBox}}),
     },
 
     pub fn init(self: *Self) !void {
@@ -39,8 +41,11 @@ pub const Render = struct {
         raylib.clearBackground(.ray_white);
         try self.drawSprites();
         try self.drawStatusBars();
-        try self.drawRectangles(); 
+        try self.drawRectangles();
         try self.drawCircles();
+        if (self.render_bounding_boxes) {
+            try self.drawBoundingBoxes();
+        }
     }
 
     fn drawSprites(self: *Self) !void {
@@ -101,6 +106,25 @@ pub const Render = struct {
         while(try self.queries.rectangles.next()) |b| {
             for(b.Position, b.Rectangle, b.Color) |pos, rect, color| {
                 raylib.drawRectangleV(pos.getVector(), rect.getVector(), color.*);
+            }
+        }
+    }
+
+    fn drawBoundingBoxes(self: *Self) !void {
+        while(try self.queries.bounding_boxes.next()) |b| {
+            for(b.BoundingBox) |bbox| {
+                if (!bbox.active) continue;
+
+                raylib.drawRectangleLinesEx(
+                    .{
+                        .x = bbox.bbox_x,
+                        .y = bbox.bbox_y,
+                        .width = bbox.bbox_width,
+                        .height = bbox.bbox_height
+                    },
+                    2.0,
+                    .red
+                );
             }
         }
     }

@@ -1,8 +1,8 @@
 const std = @import("std");
 
 pub const Attack = @import("../components/Attack.zig").Attack;
+pub const BoundingBox = @import("../components/BoundingBox.zig").BoundingBox;
 pub const Circle = @import("../components/Circle.zig").Circle;
-pub const Collidable = @import("../components/Collidable.zig").Collidable;
 pub const Color = @import("../components/Color.zig").Color;
 pub const Controller = @import("../components/Controller.zig").Controller;
 pub const Energy = @import("../components/Energy.zig").Energy;
@@ -18,8 +18,8 @@ pub const Velocity = @import("../components/Velocity.zig").Velocity;
 
 pub const compTypes = struct {
     pub const Attack = @import("../components/Attack.zig").Attack;
+    pub const BoundingBox = @import("../components/BoundingBox.zig").BoundingBox;
     pub const Circle = @import("../components/Circle.zig").Circle;
-    pub const Collidable = @import("../components/Collidable.zig").Collidable;
     pub const Color = @import("../components/Color.zig").Color;
     pub const Controller = @import("../components/Controller.zig").Controller;
     pub const Energy = @import("../components/Energy.zig").Energy;
@@ -36,8 +36,8 @@ pub const compTypes = struct {
 
 pub const ComponentName = enum {
     Attack,
+    BoundingBox,
     Circle,
-    Collidable,
     Color,
     Controller,
     Energy,
@@ -54,8 +54,8 @@ pub const ComponentName = enum {
 
 pub const ComponentTypes = [_]type {
     Attack,
+    BoundingBox,
     Circle,
-    Collidable,
     Color,
     Controller,
     Energy,
