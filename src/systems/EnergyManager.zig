@@ -46,7 +46,6 @@ pub const EnergyManager = struct {
 
                 // One time energy cost for attack
                 else if(slime.state == .attacking and !energy.attack_reducted) {
-                    std.debug.print("here", .{});
                     energy.energy -= energy.attack_cost;
                     energy.attack_reducted = true;
                 }

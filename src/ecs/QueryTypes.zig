@@ -7,12 +7,6 @@ const MaskManager = @import("MaskManager.zig").GlobalMaskManager;
 const StructField = std.builtin.Type.StructField;
 const Entity = @import("EntityManager.zig").Entity;
 
-/// Configuration for query filtering
-pub const QueryConfig = struct {
-    comps: []const CR.ComponentName,
-    exclude: ?[]const CR.ComponentName = null,
-};
-
 // Determines how a pool's archetypes are accessed during query iteration
 pub const ArchetypeAccess = enum{
     // All archetypes in the pool are guaranteed to match the query (all query components are required)
@@ -21,8 +15,7 @@ pub const ArchetypeAccess = enum{
     Lookup,
 };
 
-pub fn ArchetypeCacheType(comptime config: QueryConfig) type {
-    const components = config.comps;
+pub fn ArchetypeCacheType(comptime components: []const CR.ComponentName) type {
     // +1 for the entities field
     var fields: [components.len + 1]StructField = undefined;
 
@@ -61,47 +54,24 @@ pub fn ArchetypeCacheType(comptime config: QueryConfig) type {
 
 /// PoolElementType - One type PER pool with comptime constants
 /// This allows Query to access pool info at comptime without inline switch
-pub fn PoolElementType(comptime pool_name: PR.PoolName, comptime config: QueryConfig) type {
+pub fn PoolElementType(comptime pool_name: PR.PoolName, comptime components: []const CR.ComponentName) type {
     return struct {
         pub const POOL_NAME = pool_name;
         pub const STORAGE_STRATEGY = PR.getPoolFromName(pool_name).storage_strategy;
 
         access: ArchetypeAccess,
         archetype_indices: ArrayList(usize),
-        archetype_cache: ArrayList(ArchetypeCacheType(config)),
+        archetype_cache: ArrayList(ArchetypeCacheType(components)),
         sparse_cache: ArrayList(usize),
     };
 }
 
-pub fn countMatchingPools(comptime config: QueryConfig) comptime_int {
-    const components = config.comps;
-    const exclude = config.exclude;
+pub fn countMatchingPools(comptime components: []const CR.ComponentName) comptime_int {
     var count: comptime_int = 0;
 
     for(PR.pool_types) |pool_type| {
         var query_match = true;
         var req_match = true;
-        var excluded = false;
-
-        // Check exclusion first - if excluded component is in REQ_MASK, skip entire pool
-        if(exclude) |exc| {
-            for(exc) |exc_comp| {
-                const exc_bit = MaskManager.Comptime.componentToBit(exc_comp);
-                if(MaskManager.maskContains(pool_type.REQ_MASK, exc_bit)) {
-                    excluded = true;
-                    break;
-                }
-                // If excluded component is in pool_mask but not REQ_MASK,
-                // pool still matches but needs Lookup access
-                if(MaskManager.maskContains(pool_type.pool_mask, exc_bit)) {
-                    req_match = false;
-                }
-            }
-        }
-
-        if(excluded) {
-            continue;
-        }
 
         for(components) |component| {
             const component_bit = MaskManager.Comptime.componentToBit(component);
@@ -135,37 +105,14 @@ const PoolMatch = struct {
 };
 
 /// Returns array of matching pool names with their access types
-fn findMatchingPools(comptime config: QueryConfig) [countMatchingPools(config)]PoolMatch {
-    const components = config.comps;
-    const exclude = config.exclude;
-    const count = countMatchingPools(config);
+fn findMatchingPools(comptime components: []const CR.ComponentName) [countMatchingPools(components)]PoolMatch {
+    const count = countMatchingPools(components);
     var matches: [count]PoolMatch = undefined;
     var idx: usize = 0;
 
     for(PR.pool_types, 0..) |pool_type, i| {
         var query_match = true;
         var req_match = true;
-        var excluded = false;
-
-        // Check exclusion first - if excluded component is in REQ_MASK, skip entire pool
-        if(exclude) |exc| {
-            for(exc) |exc_comp| {
-                const exc_bit = MaskManager.Comptime.componentToBit(exc_comp);
-                if(MaskManager.maskContains(pool_type.REQ_MASK, exc_bit)) {
-                    excluded = true;
-                    break;
-                }
-                // If excluded component is in pool_mask but not REQ_MASK,
-                // pool still matches but needs Lookup access
-                if(MaskManager.maskContains(pool_type.pool_mask, exc_bit)) {
-                    req_match = false;
-                }
-            }
-        }
-
-        if(excluded) {
-            continue;
-        }
 
         for(components) |component| {
             const component_bit = MaskManager.Comptime.componentToBit(component);
@@ -198,12 +145,12 @@ fn findMatchingPools(comptime config: QueryConfig) [countMatchingPools(config)]P
 
 /// Generates a heterogeneous struct type with one field per matching pool.
 /// Each field has its own PoolElementType with comptime POOL_NAME.
-pub fn PoolElementsType(comptime config: QueryConfig) type {
-    const matches = comptime findMatchingPools(config);
+pub fn PoolElementsType(comptime components: []const CR.ComponentName) type {
+    const matches = comptime findMatchingPools(components);
     var fields: [matches.len]StructField = undefined;
 
     for(matches, 0..) |match, i| {
-        const ElemType = PoolElementType(match.pool_name, config);
+        const ElemType = PoolElementType(match.pool_name, components);
         fields[i] = StructField{
             .name = @tagName(match.pool_name),
             .type = ElemType,
@@ -225,9 +172,9 @@ pub fn PoolElementsType(comptime config: QueryConfig) type {
 }
 
 /// Returns an initialized PoolElementsType instance with access modes set
-pub fn findPoolElements(comptime config: QueryConfig) PoolElementsType(config) {
-    const matches = comptime findMatchingPools(config);
-    var result: PoolElementsType(config) = undefined;
+pub fn findPoolElements(comptime components: []const CR.ComponentName) PoolElementsType(components) {
+    const matches = comptime findMatchingPools(components);
+    var result: PoolElementsType(components) = undefined;
 
     inline for(matches) |match| {
         const field_name = @tagName(match.pool_name);

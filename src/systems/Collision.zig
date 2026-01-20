@@ -19,6 +19,8 @@ pub const Collision = struct {
         width: f32,
         height: f32,
         active: bool,
+        has_controller: bool,
+        state: Prescient.compTypes.Slime.State,
     };
 
     allocator: std.mem.Allocator,
@@ -26,6 +28,11 @@ pub const Collision = struct {
     queries: struct {
         slimes: Query(.{.comps = &.{.Position, .Slime, .Sprite, .BoundingBox}})
     },
+    prescient: *Prescient = undefined,
+
+    pub fn init(self: *Self) !void {
+        self.prescient = try Prescient.getPrescient();
+    }
 
     pub fn update(self: *Self) !void {
         // Collect all collidable entities for collision detection
@@ -34,7 +41,7 @@ pub const Collision = struct {
 
         // Gather all collidable entities with their bounding boxes
         while (try self.queries.slimes.next()) |b| {
-            for (b.entities, b.Position, b.Sprite, b.BoundingBox) |entity_id, pos, sprite, bbox| {
+            for (b.entities, b.Position, b.Sprite, b.BoundingBox, b.Slime) |entity_id, pos, sprite, bbox, slime| {
                 if (!bbox.active) continue;
 
                 // Calculate bounding box dimensions using configuration fields
@@ -60,6 +67,8 @@ pub const Collision = struct {
                 bbox.bbox_width = width;
                 bbox.bbox_height = height;
 
+                const has_controller = try self.prescient.ent.hasComponent(entity_id, .Controller);
+
                 // Use computed values for collision detection
                 try entities.append(self.allocator, .{
                     .id = entity_id,
@@ -68,6 +77,8 @@ pub const Collision = struct {
                     .width = bbox.bbox_width,
                     .height = bbox.bbox_height,
                     .active = bbox.active,
+                    .has_controller = has_controller,
+                    .state = slime.state, 
                 });
             }
         }
@@ -82,10 +93,13 @@ pub const Collision = struct {
                     entity_a.y + entity_a.height > entity_b.y;
 
                 if (colliding) {
+                    if(entity_a.has_controller and entity_a.state == .attacking) {
+                        try self.prescient.ent.destroy(entity_b.id);
+                    }
                     // Collision detected - handle collision response here
-                    std.debug.print("Collision between {} and {}\n", .{ entity_a.id, entity_b.id });
-                    std.debug.print("  A: x={d:.1}, y={d:.1}, w={d:.1}, h={d:.1}\n", .{ entity_a.x, entity_a.y, entity_a.width, entity_a.height });
-                    std.debug.print("  B: x={d:.1}, y={d:.1}, w={d:.1}, h={d:.1}\n", .{ entity_b.x, entity_b.y, entity_b.width, entity_b.height });
+                    // std.debug.print("Collision between {} and {}\n", .{ entity_a.id, entity_b.id });
+                    // std.debug.print("  A: x={d:.1}, y={d:.1}, w={d:.1}, h={d:.1}\n", .{ entity_a.x, entity_a.y, entity_a.width, entity_a.height });
+                    // std.debug.print("  B: x={d:.1}, y={d:.1}, w={d:.1}, h={d:.1}\n", .{ entity_b.x, entity_b.y, entity_b.width, entity_b.height });
                     // TODO: Add collision response logic (e.g., push apart, damage, events, etc.)
                 }
             }

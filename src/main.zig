@@ -13,6 +13,8 @@ pub fn main() !void {
     const prescient = try Prescient.init(allocator);
     defer prescient.deinit();
 
+    //prescient.getSystem(.Render).render_bounding_boxes = true;
+
     //var general_pool = try prescient.getPool(.GeneralPool);
     
     const player_slime = Slime.PlayerSlime{};

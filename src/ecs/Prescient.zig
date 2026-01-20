@@ -7,19 +7,19 @@ const PM = @import("PoolManager.zig");
 const SM = @import("SystemManager.zig");
 const PI = @import("PoolInterface.zig");
 const Query = @import("Query.zig").QueryType;
-const QueryConfig = @import("QueryTypes.zig").QueryConfig;
 const Global = @import("../Global.zig").Global;
 const PoolInterface = PI.PoolInterfaceType;
 
 pub const system_sequence = [_]SR.SystemName{
-    .EnergyManager,
     .Controller,
-    .Attack,
-    .ChangeAnim,
     .Movement,
     .Collision,
-    .UpdateStatusBar,
+    .Attack,
+    .EnergyManager,
+    .Track,
+    .ChangeAnim,
     .Animate,
+    .UpdateStatusBar,
     .Render,
 };
 
@@ -27,11 +27,21 @@ pub const Prescient = struct {
     pub const Entity = EM.Entity;
     pub const GlobalData = Global;
     pub const compTypes = CR.compTypes;
-    pub const compNames = CR.ComponentName;
+    pub const comps = CR.ComponentName;
 
     const Self = @This();
     var _Prescient: *Self = undefined;
     var _initiated: bool = false;
+
+    // Get all registered systems from SystemRegistry
+    // const all_systems = blk: {
+    //     const fields = std.meta.fields(SR.SystemName);
+    //     var systems: [fields.len]SR.SystemName = undefined;
+    //     for (fields, 0..) |field, i| {
+    //         systems[i] = @enumFromInt(field.value);
+    //     }
+    //     break :blk systems;
+    // };
 
     pub fn getPrescient() !*Self {
         if(!_initiated) return error.PrescientNotInitiated;
@@ -102,12 +112,12 @@ pub const Prescient = struct {
         return self._system_manager.isSystemActive(system);
     }
 
-    pub fn getQuery(self: *Self, comptime config: QueryConfig) !Query(config) {
-        return Query(config).init(self._allocator, self._pool_manager);
+    pub fn getQuery(self: *Self, comptime components: []const CR.ComponentName) !Query(components) {
+        return Query(components).init(self._allocator, self._pool_manager);
     }
 
-    pub fn queryPool(self: *Self, comptime pool: PR.PoolName) !Query(.{ .comps = PR.getPoolFromName(pool).COMPONENTS }) {
-        return Query(.{ .comps = PR.getPoolFromName(pool).COMPONENTS }).init(self._allocator, self._pool_manager);
+    pub fn queryPool(self: *Self, comptime pool: PR.PoolName) !Query(PR.getPoolFromName(pool).COMPONENTS) {
+        return Query(PR.getPoolFromName(pool).COMPONENTS).init(self._allocator, self._pool_manager);
     }
 };
 

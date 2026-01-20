@@ -31,7 +31,6 @@ pub fn build(b: *std.Build) void {
     });
 
     exe.linkLibrary(raylib_artifact);
-
     b.installArtifact(exe);
 
     // Registry builder: zig build registry
@@ -81,6 +80,20 @@ pub fn build(b: *std.Build) void {
     // Build Tools - Code generators for components, systems, and registries
     // =========================================================================
 
+    const update = b.addExecutable(.{
+        .name = "update",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/build_tools/update.zig"),
+            .target = target,
+            .optimize = optimize,
+        })
+    });
+
+    const update_step = b.step("update", "Update project to the newest version of Prescient");
+    const run_update = b.addRunArtifact(update);
+    run_update.addArg(b.pathFromRoot("."));
+    update_step.dependOn(&run_update.step);
+
     // Component generator: zig build component -- MyComponent
     const component_gen = b.addExecutable(.{
         .name = "component-gen",
@@ -112,4 +125,21 @@ pub fn build(b: *std.Build) void {
     if (b.args) |args| run_system_gen.addArgs(args);
     system_step.dependOn(&run_system_gen.step);
 
+    // =========================================================================
+    // Raylib installer: zig build raylib-install
+    // =========================================================================
+
+    const raylib_installer = b.addExecutable(.{
+        .name = "raylib-installer",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/build_tools/raylib_installer.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+
+    const raylib_step = b.step("raylib-install", "Install raylib-zig bindings");
+    const run_raylib_installer = b.addRunArtifact(raylib_installer);
+    run_raylib_installer.addArg(b.pathFromRoot("."));
+    raylib_step.dependOn(&run_raylib_installer.step);
 }
