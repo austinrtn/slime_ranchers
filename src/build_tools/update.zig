@@ -5,6 +5,17 @@ const root_files = [_][]const u8 {
     "build.zig",
 };
 
+const build_tools_dir = "src/build_tools/";
+const build_tool_files = [_][]const u8{
+    "update.zig",
+    "FileWriter.zig",
+    "registry_builder.zig",
+    "system_generator.zig",
+    "component_generator.zig",
+    "pool_generator.zig",
+    "raylib_installer.zig",
+};
+
 const source_files_dir = "src/ecs/";
 const source_files = [_][]const u8{
     "ecs.zig",
@@ -28,14 +39,6 @@ const source_files = [_][]const u8{
     "SystemManager.zig",
 };
 
-const build_tools_dir = "src/build_tools/";
-const build_tool_files = [_][]const u8{
-    "FileWriter.zig",
-    "registry_builder.zig",
-    "system_generator.zig",
-    "component_generator.zig",
-    "update.zig",
-};
 
 pub fn main() !void {
     var args = std.process.args();

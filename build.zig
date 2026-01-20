@@ -4,14 +4,6 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // Raylib dependency
-    const raylib_dep = b.dependency("raylib_zig", .{
-        .target = target,
-        .optimize = optimize,
-    });
-    const raylib = raylib_dep.module("raylib");
-    const raylib_artifact = raylib_dep.artifact("raylib");
-
     const mod = b.addModule("Prescient", .{
         .root_source_file = b.path("src/root.zig"),
         .target = target,
@@ -25,12 +17,10 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "Prescient", .module = mod },
-                .{ .name = "raylib", .module = raylib },
             },
         }),
     });
 
-    exe.linkLibrary(raylib_artifact);
     b.installArtifact(exe);
 
     // Registry builder: zig build registry
@@ -124,6 +114,21 @@ pub fn build(b: *std.Build) void {
     run_system_gen.addArg(b.pathFromRoot("."));
     if (b.args) |args| run_system_gen.addArgs(args);
     system_step.dependOn(&run_system_gen.step);
+
+    // Pool generator: zig build pool -- MyPool
+    const pool_gen = b.addExecutable(.{
+        .name = "pool-gen",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/build_tools/pool_generator.zig"),
+            .target = target,
+            .optimize = optimize,
+        }),
+    });
+    const pool_step = b.step("pool", "Generate a new pool template");
+    const run_pool_gen = b.addRunArtifact(pool_gen);
+    run_pool_gen.addArg(b.pathFromRoot("."));
+    if (b.args) |args| run_pool_gen.addArgs(args);
+    pool_step.dependOn(&run_pool_gen.step);
 
     // =========================================================================
     // Raylib installer: zig build raylib-install

@@ -7,27 +7,30 @@ const MaskManager = @import("MaskManager.zig").GlobalMaskManager;
 const EM = @import("EntityManager.zig");
 const QT = @import("QueryTypes.zig");
 
-pub fn QueryType(comptime components: []const CR.ComponentName) type {
+pub fn QueryType(comptime config: QT.QueryConfig) type {
+    const components = config.comps;
+    const exclude = config.exclude;
     // PoolElementsType generates a heterogeneous struct where each field
     // has its own type with comptime POOL_NAME and STORAGE_STRATEGY
-    const QResultType = QT.PoolElementsType(components);
+    const QResultType = QT.PoolElementsType(config);
     const POOL_COUNT = std.meta.fields(QResultType).len;
 
     return struct {
         const Self = @This();
         const pool_count = POOL_COUNT;
         pub const MASK = MaskManager.Comptime.createMask(components);
+        pub const EXCLUDE_MASK = if (exclude) |exc| MaskManager.Comptime.createMask(exc) else 0;
 
         allocator: std.mem.Allocator,
         updated: bool = false,
         pool_manager: *PM.PoolManager,
-        query_storage: QResultType = QT.findPoolElements(components),
+        query_storage: QResultType = QT.findPoolElements(config),
 
         pool_index: usize = 0,
         archetype_index: usize = 0,
 
         // Track sparse batch allocations for cleanup
-        sparse_batch_allocs: ArrayList(QT.ArchetypeCacheType(components)) = .{},
+        sparse_batch_allocs: ArrayList(QT.ArchetypeCacheType(config)) = .{},
 
         pub fn init(allocator: std.mem.Allocator, pool_manager: *PM.PoolManager) !Self {
             var self = Self{
@@ -39,7 +42,7 @@ pub fn QueryType(comptime components: []const CR.ComponentName) type {
             inline for(std.meta.fields(QResultType)) |field| {
                 var pool_element = &@field(self.query_storage, field.name);
                 pool_element.archetype_indices = ArrayList(usize){};
-                pool_element.archetype_cache = ArrayList(QT.ArchetypeCacheType(components)){};
+                pool_element.archetype_cache = ArrayList(QT.ArchetypeCacheType(config)){};
                 pool_element.sparse_cache = ArrayList(usize){};
             }
 
@@ -116,10 +119,16 @@ pub fn QueryType(comptime components: []const CR.ComponentName) type {
         }
 
         fn cacheIfMatches(self: *Self, pool_element: anytype, pool: anytype, arch: usize) !void {
+            const archetype_bitmask = pool.mask_list.items[arch];
+
+            // Skip if archetype contains any excluded component
+            if (EXCLUDE_MASK != 0 and (archetype_bitmask & Self.EXCLUDE_MASK) != 0) {
+                return;
+            }
+
             if(pool_element.access == .Direct) {
                 try self.cache(pool_element, pool, arch, null);
             } else {
-                const archetype_bitmask = pool.mask_list.items[arch];
                 if(MaskManager.maskContains(archetype_bitmask, Self.MASK)) {
                     try self.cache(pool_element, pool, arch, null);
                 }
@@ -136,7 +145,7 @@ pub fn QueryType(comptime components: []const CR.ComponentName) type {
         /// Convert archetype storage into Query Struct and append it to query cache
         /// Allocates pointer arrays for mutable access to storage
         fn cacheArchetype(self: *Self, pool_element: anytype, pool: anytype, archetype_index: usize, index_in_pool_elem: ?usize) !void {
-            const ArchCacheType = comptime QT.ArchetypeCacheType(components);
+            const ArchCacheType = comptime QT.ArchetypeCacheType(config);
             var archetype_cache: ArchCacheType = undefined;
             const storage = &pool.archetype_list.items[archetype_index];
 
@@ -170,7 +179,7 @@ pub fn QueryType(comptime components: []const CR.ComponentName) type {
             }
         }
 
-        pub fn next(self: *Self) !?QT.ArchetypeCacheType(components){
+        pub fn next(self: *Self) !?QT.ArchetypeCacheType(config){
             // Only require update() before first iteration (at start position)
             if(self.pool_index == 0 and self.archetype_index == 0 and !self.updated) {
                 return error.QueryNotUpdated;
@@ -219,7 +228,7 @@ pub fn QueryType(comptime components: []const CR.ComponentName) type {
                                 const v_arch_index = pool_elem.sparse_cache.items[self.archetype_index];
                                 const storage_indexes = pool.virtual_archetypes.items[v_arch_index];
 
-                                var batch: QT.ArchetypeCacheType(components) = undefined;
+                                var batch: QT.ArchetypeCacheType(config) = undefined;
 
                                 // Build entities slice
                                 const entities_array = self.allocator.alloc(EM.Entity, storage_indexes.items.len) catch unreachable;
