@@ -3,26 +3,17 @@ const cr = @import("ComponentRegistry.zig");
 const EntityPool = @import("../ecs/EntityPool.zig").EntityPool;
 const StorageStrategy = @import("../ecs/StorageStrategy.zig").StorageStrategy;
 
-// GeneralPool - includes all registered components
-const general_components = std.meta.tags(cr.ComponentName);
-pub const GeneralPool = EntityPool(.{
-    .name = .GeneralPool,
-    .components = general_components,
-    .storage_strategy = .SPARSE,
-});
-
-pub const SlimePool = EntityPool(.{
-    .name = .SlimePool,
-    .req = &.{.Position, .Velocity, .Speed, .Slime, .Sprite, .Texture, .Attack, .BoundingBox},
-    .components = &.{.Controller, .Energy, },
-    .storage_strategy = .ARCHETYPE,
-});
-
-// Add more pools below...
-
 pub const PoolName = enum(u32) {
     GeneralPool,
     SlimePool,
+};
+
+pub const GeneralPool = @import("../pools/GeneralPool.zig").GeneralPool;
+pub const SlimePool = @import("../pools/SlimePool.zig").SlimePool;
+
+pub const poolTypes = struct {
+    pub const GeneralPool = @import("../pools/GeneralPool.zig").GeneralPool;
+    pub const SlimePool = @import("../pools/SlimePool.zig").SlimePool;
 };
 
 pub const pool_types = [_]type{

@@ -6,6 +6,7 @@ const EM = @import("EntityManager.zig");
 const PM = @import("PoolManager.zig");
 const SM = @import("SystemManager.zig");
 const PI = @import("PoolInterface.zig");
+const factoryTypes = @import("../registries/FactoryRegistry.zig").factoryTypes;
 const Query = @import("Query.zig").QueryType;
 const QueryConfig = @import("QueryTypes.zig").QueryConfig;
 const Global = @import("../Global.zig").Global;
@@ -28,21 +29,13 @@ pub const Prescient = struct {
     pub const Entity = EM.Entity;
     pub const GlobalData = Global;
     pub const compTypes = CR.compTypes;
+    pub const poolTypes = PR.poolTypes;
     pub const comps = CR.ComponentName;
+    pub const Factories = factoryTypes;
 
     const Self = @This();
     var _Prescient: *Self = undefined;
     var _initiated: bool = false;
-
-    // Get all registered systems from SystemRegistry
-    // const all_systems = blk: {
-    //     const fields = std.meta.fields(SR.SystemName);
-    //     var systems: [fields.len]SR.SystemName = undefined;
-    //     for (fields, 0..) |field, i| {
-    //         systems[i] = @enumFromInt(field.value);
-    //     }
-    //     break :blk systems;
-    // };
 
     pub fn getPrescient() !*Self {
         if(!_initiated) return error.PrescientNotInitiated;

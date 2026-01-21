@@ -57,10 +57,16 @@ pub fn main() !void {
         \\    // .Velocity,
         \\}};
         \\
+        \\const req_components = &[_]ComponentName{{
+        \\    // Add your required components here, e.g.:
+        \\    // .Position,
+        \\    // .Velocity,
+        \\}};
+        \\
         \\pub const {s} = EntityPool(.{{
         \\    .name = .{s},
         \\    .components = pool_components,
-        \\    .req = null,
+        \\    .req = req_components,
         \\    .storage_strategy = .SPARSE,
         \\}});
         \\
