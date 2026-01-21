@@ -8,4 +8,6 @@ pub const Wave = struct {
     
     start_scale: f32 = 1,
     end_scale: f32 = 3,
+
+    opacity_acc: f32 = 255,
 };

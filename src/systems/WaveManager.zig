@@ -38,6 +38,12 @@ pub const WaveManager = struct {
 
                     sprite.scale = wave.start_scale + (wave.end_scale * percent_acc); 
 
+                    wave.opacity_acc -=  4 * (percent_acc);
+                    if(wave.opacity_acc < 0) wave.opacity_acc = 0;
+                    const alpha: u8 = @intFromFloat(wave.opacity_acc);
+
+                    sprite.tint.a = alpha;
+
                     if(wave.time_acc >= wave.anim_length) wave.active = false;
                     sprite.is_visible = true;
                 } 
@@ -46,6 +52,8 @@ pub const WaveManager = struct {
                     sprite.frame_index = 0;
                     sprite.delay_counter = 0;
                     sprite.is_visible = false;
+                    sprite.tint.a = 255;
+                    wave.opacity_acc = 255;
                 }
             }
         }
