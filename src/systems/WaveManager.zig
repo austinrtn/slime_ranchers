@@ -36,11 +36,11 @@ pub const WaveManager = struct {
                     wave.time_acc+= raylib.getFrameTime();
                     const percent_acc = wave.time_acc / wave.anim_length;
 
-                    sprite.scale = wave.start_scale + (wave.end_scale * percent_acc); 
+                    sprite.scale = wave.start_scale + (wave.end_scale * percent_acc);
 
-                    wave.opacity_acc -=  4 * (percent_acc);
-                    if(wave.opacity_acc < 0) wave.opacity_acc = 0;
-                    const alpha: u8 = @intFromFloat(wave.opacity_acc);
+                    const min_alpha: f32 = 15.0;
+                    const alpha: u8 = 
+                        @intFromFloat(255.0 - ((255.0 - min_alpha) * percent_acc));
 
                     sprite.tint.a = alpha;
 
