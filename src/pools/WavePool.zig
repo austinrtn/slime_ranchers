@@ -10,10 +10,10 @@ const pool_components = &[_]ComponentName{
 
 const req_components = &[_]ComponentName{
     .Position,
-//    .BoundingBox,
     .Texture,
     .SlimeRef,
     .Wave,
+    .BoundingBox,
 };
 
 pub const WavePool = EntityPool(.{

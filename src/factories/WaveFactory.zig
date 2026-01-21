@@ -49,6 +49,7 @@ pub const WaveFactory = struct {
             .Sprite = sprite,
             .Texture = self.texture,
             .Wave = .{},
+            .BoundingBox = .{},
         });
     }
 };

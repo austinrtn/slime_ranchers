@@ -4,6 +4,7 @@ const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
+const comps = Prescient.Components.Types;
 
 pub const Collision = struct {
     const Self = @This();
@@ -20,13 +21,15 @@ pub const Collision = struct {
         height: f32,
         active: bool,
         has_controller: bool,
-        state: Prescient.Components.Types.Slime.State,
+        state: ?Prescient.Components.Types.Slime.State,
     };
 
     allocator: std.mem.Allocator,
+    entities: std.ArrayList(CollisionEntity) = .{},
     active: bool = true,
     queries: struct {
-        slimes: Query(.{.comps = &.{.Position, .Slime, .Sprite, .BoundingBox}})
+        slimes: Query(.{.comps = &.{.Position, .Slime, .Sprite, .BoundingBox}}),
+        waves: Query(.{.comps = &.{.Wave, .Position, .Sprite, .BoundingBox}}),
     },
     prescient: *Prescient = undefined,
 
@@ -34,52 +37,24 @@ pub const Collision = struct {
         self.prescient = try Prescient.getPrescient();
     }
 
+    pub fn deinit(self: *Self) void {
+        self.entities.deinit(self.allocator);
+    }
+
     pub fn update(self: *Self) !void {
         // Collect all collidable entities for collision detection
-        var entities = std.ArrayList(CollisionEntity){};
-        defer entities.deinit(self.allocator);
+        var entities = &self.entities;
+        defer entities.clearRetainingCapacity();
 
         // Gather all collidable entities with their bounding boxes
         while (try self.queries.slimes.next()) |b| {
-            for (b.entities, b.Position, b.Sprite, b.BoundingBox, b.Slime) |entity_id, pos, sprite, bbox, slime| {
+            for (b.entities, b.Position, b.Sprite, b.BoundingBox, b.Slime) |ent, pos, sprite, bbox, slime| {
                 if (!bbox.active) continue;
 
-                // Calculate bounding box dimensions using configuration fields
-                // Use custom bbox dimensions if set, otherwise use full sprite frame
-                const unscaled_width = if (bbox.width > 0) bbox.width else sprite.source.width;
-                const unscaled_height = if (bbox.height > 0) bbox.height else sprite.source.height;
+                var col_ent = try self.getCollisionEntity(ent, pos, bbox, sprite);
+                col_ent.state = slime.state; 
 
-                const width = unscaled_width * sprite.scale;
-                const height = unscaled_height * sprite.scale;
-
-                // Position is where the sprite origin/pivot is placed
-                // Calculate where the collision box center should be
-                const collision_center_x = pos.x + (bbox.offset_x * sprite.scale);
-                const collision_center_y = pos.y + (bbox.offset_y * sprite.scale);
-
-                // Calculate top-left corner of collision box
-                const bbox_x = collision_center_x - (width / 2.0);
-                const bbox_y = collision_center_y - (height / 2.0);
-
-                // WRITE computed bounding box data to component for other systems
-                bbox.bbox_x = bbox_x;
-                bbox.bbox_y = bbox_y;
-                bbox.bbox_width = width;
-                bbox.bbox_height = height;
-
-                const has_controller = try self.prescient.ent.hasComponent(entity_id, .Controller);
-
-                // Use computed values for collision detection
-                try entities.append(self.allocator, .{
-                    .id = entity_id,
-                    .x = bbox.bbox_x,
-                    .y = bbox.bbox_y,
-                    .width = bbox.bbox_width,
-                    .height = bbox.bbox_height,
-                    .active = bbox.active,
-                    .has_controller = has_controller,
-                    .state = slime.state, 
-                });
+                try entities.append(self.allocator, col_ent);
             }
         }
 
@@ -104,5 +79,41 @@ pub const Collision = struct {
                 }
             }
         }
+    }
+
+    fn getCollisionEntity(self: *Self, ent: Prescient.Entity, pos: comps.Position, bbox: comps.BoundingBox,  sprite: comps.Sprite) !CollisionEntity {
+
+        const unscaled_width = if (bbox.width > 0) bbox.width else sprite.source.width;
+        const unscaled_height = if (bbox.height > 0) bbox.height else sprite.source.height;
+
+        const width = unscaled_width * sprite.scale;
+        const height = unscaled_height * sprite.scale;
+
+        // Position is where the sprite origin/pivot is placed
+        // Calculate where the collision box center should be
+        const collision_center_x = pos.x + (bbox.offset_x * sprite.scale);
+        const collision_center_y = pos.y + (bbox.offset_y * sprite.scale);
+
+        // Calculate top-left corner of collision box
+        const bbox_x = collision_center_x - (width / 2.0);
+        const bbox_y = collision_center_y - (height / 2.0);
+
+        // WRITE computed bounding box data to component for other systems
+        bbox.bbox_x = bbox_x;
+        bbox.bbox_y = bbox_y;
+        bbox.bbox_width = width;
+        bbox.bbox_height = height;
+
+        const has_controller = try self.prescient.ent.hasComponent(ent, .Controller);
+        return  .{ 
+            .id = ent,
+            .x = bbox.bbox_x,
+            .y = bbox.bbox_y,
+            .width = bbox.bbox_width,
+            .height = bbox.bbox_height,
+            .active = bbox.active,
+            .has_controller = has_controller,
+            .state = null,
+        };
     }
 };
