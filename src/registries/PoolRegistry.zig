@@ -6,19 +6,23 @@ const StorageStrategy = @import("../ecs/StorageStrategy.zig").StorageStrategy;
 pub const PoolName = enum(u32) {
     GeneralPool,
     SlimePool,
+    StatusBar,
 };
 
 pub const GeneralPool = @import("../pools/GeneralPool.zig").GeneralPool;
 pub const SlimePool = @import("../pools/SlimePool.zig").SlimePool;
+pub const StatusBar = @import("../pools/StatusBar.zig").StatusBar;
 
 pub const poolTypes = struct {
     pub const GeneralPool = @import("../pools/GeneralPool.zig").GeneralPool;
     pub const SlimePool = @import("../pools/SlimePool.zig").SlimePool;
+    pub const StatusBar = @import("../pools/StatusBar.zig").StatusBar;
 };
 
 pub const pool_types = [_]type{
     GeneralPool,
     SlimePool,
+    StatusBar,
 };
 
 pub fn getPoolFromName(comptime pool: PoolName) type {

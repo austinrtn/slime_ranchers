@@ -18,7 +18,6 @@ pub const system_sequence = [_]SR.SystemName{
     .Collision,
     .Attack,
     .EnergyManager,
-    .Track,
     .ChangeAnim,
     .Animate,
     .UpdateStatusBar,

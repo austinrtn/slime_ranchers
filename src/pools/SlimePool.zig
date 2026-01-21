@@ -8,7 +8,6 @@ const pool_components = &[_]ComponentName{
     .Attack,
     .Energy,
     .Controller,
-    .Health,
 };
 
 const req_components = &[_]ComponentName{
@@ -19,6 +18,7 @@ const req_components = &[_]ComponentName{
     .Sprite,
     .Texture,
     .Slime,
+    .Health,
 };
 
 pub const SlimePool = EntityPool(.{

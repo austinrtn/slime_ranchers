@@ -3,19 +3,31 @@ const Prescient = @import("../ecs/Prescient.zig").Prescient;
 const raylib = @import("raylib");
 const comps = Prescient.compTypes;
 
-pub var EnergyStatusBar = StatusBar{
-    .position = .{.x = 10, .y = 750},
-    .color = .yellow,
-    .max_size = .{.width = 780, .height = 25},
-    .status_bar = .{
-        .status_type = .energy,
-        .max_size = undefined,
-        .current_size = undefined,
-        .entity_link = undefined,
-    },
-};
-
 pub const StatusBar = struct {
+    pub var EnergyStatusBar = StatusBar{
+        .position = .{.x = 10, .y = 770},
+        .color = .yellow,
+        .max_size = .{.width = 780, .height = 25},
+        .status_bar = .{
+            .status_type = .energy,
+            .max_size = undefined,
+            .current_size = undefined,
+            .entity_link = undefined,
+        },
+    };
+
+    pub var HealthStatusBar = StatusBar {
+        .position = .{.x = 10, .y = 740},
+        .color = .red,
+        .max_size = .{.width = 780, .height = 25},
+        .status_bar = .{
+            .status_type = .health,
+            .max_size = undefined,
+            .current_size = undefined,
+            .entity_link = undefined,
+        }
+    };
+
     position: comps.Position, 
     color: comps.Color,
     max_size: comps.Rectangle,
@@ -23,7 +35,7 @@ pub const StatusBar = struct {
 
     pub fn spawn(self: *@This(), entity_link: Prescient.Entity) !Prescient.Entity{
         const prescient = try Prescient.getPrescient();
-        var pool = try prescient.getPool(.GeneralPool);
+        var pool = try prescient.getPool(.StatusBar);
 
         self.status_bar.max_size = self.max_size;
         self.status_bar.current_size = self.max_size;
