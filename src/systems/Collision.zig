@@ -20,7 +20,7 @@ pub const Collision = struct {
         height: f32,
         active: bool,
         has_controller: bool,
-        state: Prescient.compTypes.Slime.State,
+        state: Prescient.Components.Types.Slime.State,
     };
 
     allocator: std.mem.Allocator,

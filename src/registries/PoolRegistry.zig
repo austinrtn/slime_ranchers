@@ -7,22 +7,26 @@ pub const PoolName = enum(u32) {
     GeneralPool,
     SlimePool,
     StatusBar,
+    WavePool,
 };
 
 pub const GeneralPool = @import("../pools/GeneralPool.zig").GeneralPool;
 pub const SlimePool = @import("../pools/SlimePool.zig").SlimePool;
 pub const StatusBar = @import("../pools/StatusBar.zig").StatusBar;
+pub const WavePool = @import("../pools/WavePool.zig").WavePool;
 
-pub const poolTypes = struct {
+pub const PoolTypeMap = struct {
     pub const GeneralPool = @import("../pools/GeneralPool.zig").GeneralPool;
     pub const SlimePool = @import("../pools/SlimePool.zig").SlimePool;
     pub const StatusBar = @import("../pools/StatusBar.zig").StatusBar;
+    pub const WavePool = @import("../pools/WavePool.zig").WavePool;
 };
 
 pub const pool_types = [_]type{
     GeneralPool,
     SlimePool,
     StatusBar,
+    WavePool,
 };
 
 pub fn getPoolFromName(comptime pool: PoolName) type {

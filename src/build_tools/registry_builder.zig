@@ -109,9 +109,11 @@ fn buildRegistry(
 
     try writeImports(allocator, &fileStorage, directoryName);
 
-    // Only generate compTypes for ComponentRegistry, not SystemRegistry
+    // Generate TypeMap for Components and Systems
     if (std.mem.eql(u8, varName, "Component")) {
-        try writeCompTypes(allocator, &fileStorage, directoryName);
+        try writeCompTypeMap(allocator, &fileStorage, directoryName);
+    } else if (std.mem.eql(u8, varName, "System")) {
+        try writeSystemTypeMap(allocator, &fileStorage, directoryName);
     }
 
     try writeDataStructures(allocator, &fileStorage, varName);
@@ -233,9 +235,12 @@ fn writeEmptyRegistry(allocator: std.mem.Allocator, fs: *FileStorage, varName: [
     try fs.fileWriter.writeFmt(allocator, "// Add {s}s to src/{s}s/ and rebuild\n", .{ varName, varName });
     try fs.fileWriter.writeLine(allocator, "");
 
-    // Only generate compTypes for ComponentRegistry, not SystemRegistry
+    // Generate TypeMap for Components and Systems
     if (std.mem.eql(u8, varName, "Component")) {
-        try fs.fileWriter.writeLine(allocator, "pub const compTypes = struct {};");
+        try fs.fileWriter.writeLine(allocator, "pub const CompTypeMap = struct {};");
+        try fs.fileWriter.writeLine(allocator, "");
+    } else if (std.mem.eql(u8, varName, "System")) {
+        try fs.fileWriter.writeLine(allocator, "pub const SystemTypeMap = struct {};");
         try fs.fileWriter.writeLine(allocator, "");
     }
 
@@ -271,8 +276,21 @@ fn writeImports(allocator: std.mem.Allocator, fs: *FileStorage, directoryName: [
     try fs.fileWriter.writeLine(allocator, "");
 }
 
-fn writeCompTypes(allocator: std.mem.Allocator, fs: *FileStorage, directoryName: []const u8) !void {
-    try fs.fileWriter.writeLine(allocator, "pub const compTypes = struct {");
+fn writeCompTypeMap(allocator: std.mem.Allocator, fs: *FileStorage, directoryName: []const u8) !void {
+    try fs.fileWriter.writeLine(allocator, "pub const CompTypeMap = struct {");
+    for (fs.fileData.items) |data| {
+        try fs.fileWriter.writeFmt(
+            allocator,
+            "    pub const {s} = @import(\"../{s}/{s}\").{s};\n",
+            .{ data.typeName, directoryName, data.fileName, data.typeName },
+        );
+    }
+    try fs.fileWriter.writeLine(allocator, "};");
+    try fs.fileWriter.writeLine(allocator, "");
+}
+
+fn writeSystemTypeMap(allocator: std.mem.Allocator, fs: *FileStorage, directoryName: []const u8) !void {
+    try fs.fileWriter.writeLine(allocator, "pub const SystemTypeMap = struct {");
     for (fs.fileData.items) |data| {
         try fs.fileWriter.writeFmt(
             allocator,
@@ -344,7 +362,7 @@ fn buildPoolRegistry(allocator: std.mem.Allocator, project_dir: []const u8) !voi
     try writePoolRegistryHeader(allocator, &fileStorage);
     try writePoolNameEnum(allocator, &fileStorage);
     try writePoolImports(allocator, &fileStorage);
-    try writePoolTypes(allocator, &fileStorage);
+    try writePoolTypeMap(allocator, &fileStorage);
     try writePoolDataStructures(allocator, &fileStorage);
     try writePoolStaticFunctions(allocator, &fileStorage);
 
@@ -365,7 +383,7 @@ fn writeEmptyPoolRegistry(allocator: std.mem.Allocator, fs: *FileStorage) !void 
     try fs.fileWriter.writeLine(allocator, "");
     try fs.fileWriter.writeLine(allocator, "};");
     try fs.fileWriter.writeLine(allocator, "");
-    try fs.fileWriter.writeLine(allocator, "pub const poolTypes = struct {};");
+    try fs.fileWriter.writeLine(allocator, "pub const PoolTypeMap = struct {};");
     try fs.fileWriter.writeLine(allocator, "");
     try fs.fileWriter.writeLine(allocator, "pub const pool_types = [_]type{");
     try fs.fileWriter.writeLine(allocator, "");
@@ -403,8 +421,8 @@ fn writePoolImports(allocator: std.mem.Allocator, fs: *FileStorage) !void {
     try fs.fileWriter.writeLine(allocator, "");
 }
 
-fn writePoolTypes(allocator: std.mem.Allocator, fs: *FileStorage) !void {
-    try fs.fileWriter.writeLine(allocator, "pub const poolTypes = struct {");
+fn writePoolTypeMap(allocator: std.mem.Allocator, fs: *FileStorage) !void {
+    try fs.fileWriter.writeLine(allocator, "pub const PoolTypeMap = struct {");
     for (fs.fileData.items) |data| {
         try fs.fileWriter.writeFmt(
             allocator,

@@ -28,6 +28,8 @@ pub const Sprite = struct {
     delay_counter: f32 = 0.0,   // Internal counter for animation timing (accumulated time)
     animation_mode: AnimationMode = .looping,  // Whether animation loops or plays once
     animation_complete: bool = false,           // Set to true when a .once animation finishes
+                                                //
+    is_visible: bool = true,
 
     pub fn nextFrame(self: *@This()) void {
         // Skip if animation is complete (for .once mode)
@@ -40,6 +42,7 @@ pub const Sprite = struct {
         if(self.delay_counter < self.animation_delay) {
             return;
         }
+
         // Subtract delay to preserve overflow time for smooth animation
         self.delay_counter -= self.animation_delay;
 

@@ -10,13 +10,15 @@ pub const Health = @import("../components/Health.zig").Health;
 pub const Position = @import("../components/Position.zig").Position;
 pub const Rectangle = @import("../components/Rectangle.zig").Rectangle;
 pub const Slime = @import("../components/Slime.zig").Slime;
+pub const SlimeRef = @import("../components/SlimeRef.zig").SlimeRef;
 pub const Speed = @import("../components/Speed.zig").Speed;
 pub const Sprite = @import("../components/Sprite.zig").Sprite;
 pub const StatusBar = @import("../components/StatusBar.zig").StatusBar;
 pub const Texture = @import("../components/Texture.zig").Texture;
 pub const Velocity = @import("../components/Velocity.zig").Velocity;
+pub const Wave = @import("../components/Wave.zig").Wave;
 
-pub const compTypes = struct {
+pub const CompTypeMap = struct {
     pub const Attack = @import("../components/Attack.zig").Attack;
     pub const BoundingBox = @import("../components/BoundingBox.zig").BoundingBox;
     pub const Circle = @import("../components/Circle.zig").Circle;
@@ -27,11 +29,13 @@ pub const compTypes = struct {
     pub const Position = @import("../components/Position.zig").Position;
     pub const Rectangle = @import("../components/Rectangle.zig").Rectangle;
     pub const Slime = @import("../components/Slime.zig").Slime;
+    pub const SlimeRef = @import("../components/SlimeRef.zig").SlimeRef;
     pub const Speed = @import("../components/Speed.zig").Speed;
     pub const Sprite = @import("../components/Sprite.zig").Sprite;
     pub const StatusBar = @import("../components/StatusBar.zig").StatusBar;
     pub const Texture = @import("../components/Texture.zig").Texture;
     pub const Velocity = @import("../components/Velocity.zig").Velocity;
+    pub const Wave = @import("../components/Wave.zig").Wave;
 };
 
 pub const ComponentName = enum {
@@ -45,11 +49,13 @@ pub const ComponentName = enum {
     Position,
     Rectangle,
     Slime,
+    SlimeRef,
     Speed,
     Sprite,
     StatusBar,
     Texture,
     Velocity,
+    Wave,
 };
 
 pub const ComponentTypes = [_]type {
@@ -63,11 +69,13 @@ pub const ComponentTypes = [_]type {
     Position,
     Rectangle,
     Slime,
+    SlimeRef,
     Speed,
     Sprite,
     StatusBar,
     Texture,
     Velocity,
+    Wave,
 };
 
 pub fn getTypeByName(comptime component_name: ComponentName) type {

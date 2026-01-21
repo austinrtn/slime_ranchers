@@ -15,6 +15,7 @@ const PoolInterface = PI.PoolInterfaceType;
 pub const system_sequence = [_]SR.SystemName{
     .Controller,
     .Movement,
+    .WaveManager, 
     .Collision,
     .Attack,
     .EnergyManager,
@@ -27,10 +28,22 @@ pub const system_sequence = [_]SR.SystemName{
 pub const Prescient = struct {
     pub const Entity = EM.Entity;
     pub const GlobalData = Global;
-    pub const compTypes = CR.compTypes;
-    pub const poolTypes = PR.poolTypes;
-    pub const comps = CR.ComponentName;
     pub const Factories = factoryTypes;
+
+    pub const Components = struct {
+        pub const Names = CR.ComponentName;
+        pub const Types = CR.CompTypeMap;
+    };
+
+    pub const Systems = struct {
+        pub const Names = SR.SystemName;
+        pub const Types = SR.SystemTypeMap;
+    };
+
+    pub const Pools = struct {
+        pub const Names = PR.PoolName;
+        pub const Types = PR.PoolTypeMap;
+    };
 
     const Self = @This();
     var _Prescient: *Self = undefined;

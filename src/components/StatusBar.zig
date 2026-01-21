@@ -8,6 +8,6 @@ pub const StatusBar = struct {
     status_type: StatusType,
     entity_link: Prescient.Entity,
 
-    current_size: Prescient.compTypes.Rectangle,
-    max_size: Prescient.compTypes.Rectangle,
+    current_size: Prescient.Components.Types.Rectangle,
+    max_size: Prescient.Components.Types.Rectangle,
 };

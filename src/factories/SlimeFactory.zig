@@ -1,12 +1,12 @@
 const std = @import("std");
 const Prescient = @import("../ecs/Prescient.zig").Prescient;
 const raylib = @import("raylib");
-const comps = Prescient.compTypes;
+const comps = Prescient.Components.Types;
 
 pub const Slime = struct {
     //defaults
     velocity: comps.Velocity = .{.dx = 0, .dy = 0},
-    health: Prescient.compTypes.Health = .{.health = 50, .max_health = 100},
+    health: comps.Health = .{.health = 50, .max_health = 100},
     energy: comps.Energy = .{
         .energy = 100, 
         .max_energy = 100, 

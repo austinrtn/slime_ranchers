@@ -51,6 +51,7 @@ pub const Render = struct {
     fn drawSprites(self: *Self) !void {
         while(try self.queries.sprites.next()) |b| {
             for(b.Position, b.Texture, b.Sprite) |pos, texture, sprite| {
+                if(!sprite.is_visible) continue;
 
                 // Destination rectangle (where to draw on screen)
                 // Position is where the origin/pivot point will be

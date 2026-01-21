@@ -1,7 +1,7 @@
 const std = @import("std");
 const Prescient = @import("../ecs/Prescient.zig").Prescient;
 const raylib = @import("raylib");
-const comps = Prescient.compTypes;
+const comps = Prescient.Components.Types;
 
 pub const StatusBar = struct {
     pub var EnergyStatusBar = StatusBar{
