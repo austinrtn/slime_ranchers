@@ -5,7 +5,7 @@ const ComponentName = CR.ComponentName;
 
 // Define which components this pool supports
 const pool_components = &[_]ComponentName{
-    .Sprite,
+    .BoundingBox,
 };
 
 const req_components = &[_]ComponentName{
@@ -13,7 +13,7 @@ const req_components = &[_]ComponentName{
     .Texture,
     .SlimeRef,
     .Wave,
-    .BoundingBox,
+    .Sprite,
 };
 
 pub const WavePool = EntityPool(.{

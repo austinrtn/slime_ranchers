@@ -14,6 +14,7 @@ pub const WaveManager = struct {
 
     allocator: std.mem.Allocator,
     active: bool = true,
+    
     queries: struct {
         waves: Query(.{ .comps = &.{.Position, .SlimeRef, .Sprite, .Wave}}),
     },
@@ -22,7 +23,7 @@ pub const WaveManager = struct {
         var prescient = try Prescient.getPrescient();
 
         while(try self.queries.waves.next()) |b| {
-            for(b.Position, b.SlimeRef, b.Sprite, b.Wave) |pos, ref, sprite, wave| {
+            for(b.entities, b.Position, b.SlimeRef, b.Sprite, b.Wave) |ent, pos, ref, sprite, wave| {
                 const slime = try prescient.ent.getEntityComponentData(ref.*, .Slime);
                 const slime_pos = try prescient.ent.getEntityComponentData(ref.*, .Position);
 
@@ -32,21 +33,24 @@ pub const WaveManager = struct {
                     wave.active = true; 
                 }
 
-                if(wave.active) {
-                    wave.time_acc+= raylib.getFrameTime();
-                    const percent_acc = wave.time_acc / wave.anim_length;
+                wave.time_acc+= raylib.getFrameTime();
+                if(wave.time_acc >= wave.anim_length) {
+                    var pool = try prescient.getPool(.WavePool);
+                    try pool.destroyEntity(ent);
+                }
 
-                    sprite.scale = wave.start_scale + (wave.end_scale * percent_acc);
+                const percent_acc = wave.time_acc / wave.anim_length;
 
-                    const min_alpha: f32 = 15.0;
-                    const alpha: u8 = 
-                        @intFromFloat(255.0 - ((255.0 - min_alpha) * percent_acc));
+                sprite.scale = wave.start_scale + (wave.end_scale * percent_acc);
 
-                    sprite.tint.a = alpha;
+                const min_alpha: f32 = 50.0;
+                const alpha: u8 = 
+                    @intFromFloat(255.0 - ((255.0 - min_alpha) * percent_acc));
 
-                    if(wave.time_acc >= wave.anim_length) wave.active = false;
-                    sprite.is_visible = true;
-                } 
+                sprite.tint.a = alpha;
+
+                sprite.is_visible = true;
+
                 if(!wave.active) {
                     wave.time_acc = 0;
                     sprite.frame_index = 0;

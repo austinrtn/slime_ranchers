@@ -14,13 +14,19 @@ pub const Controller = struct {
 
     allocator: std.mem.Allocator,
     active: bool = true,
+    wave_factory: Prescient.Factories.WaveFactory = undefined, 
     queries: struct {
         controllables: Query(.{ .comps = &.{.Slime, .Sprite, .Controller, .Velocity, .Speed, .Attack} }),
     },
 
+    pub fn init(self: *Self) !void {
+        self.wave_factory = try Prescient.Factories.WaveFactory.init();
+    }
+
     pub fn update(self: *Self) !void {
         while(try self.queries.controllables.next()) |b| {
-            for(b.Slime, b.Velocity, b.Speed, b.Sprite, b.Attack) |slime, vel, spd, sprite, atk| {
+            for(b.entities, b.Slime, b.Velocity, b.Speed, b.Sprite, b.Attack) |ent, slime, vel, spd, sprite, atk| {
+
                 if(slime.state == .attacking) {
                     if(sprite.animation_complete) {
                         slime.state = .idling;
@@ -32,6 +38,8 @@ pub const Controller = struct {
                     sprite.delay_counter = 0;
                     sprite.animation_complete = false;
                     slime.state = .attacking;
+                    //var factory = Prescient.Factory.WaveFactory.init();
+                    _ = try self.wave_factory.spawn(.{ .position = .{.x = 0, .y = 0}, .slime_ref = ent});
                 }
                 if(slime.state != .attacking and slime.state != .recovering){
                     //UP & DOWN

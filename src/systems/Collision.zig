@@ -5,6 +5,7 @@ const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
 const comps = Prescient.Components.Types;
+const comp_name = Prescient.Components.Names;
 
 pub const Collision = struct {
     const Self = @This();
@@ -22,6 +23,8 @@ pub const Collision = struct {
         active: bool,
         has_controller: bool,
         state: ?Prescient.Components.Types.Slime.State,
+        tag: comp_name,
+        ent_ref: ?Prescient.Entity,
     };
 
     allocator: std.mem.Allocator,
@@ -51,8 +54,20 @@ pub const Collision = struct {
             for (b.entities, b.Position, b.Sprite, b.BoundingBox, b.Slime) |ent, pos, sprite, bbox, slime| {
                 if (!bbox.active) continue;
 
-                var col_ent = try self.getCollisionEntity(ent, pos, bbox, sprite);
+                const has_controller = try self.prescient.ent.hasComponent(ent, .Controller);
+                var col_ent = try getCollisionEntity(ent, pos, bbox, sprite, has_controller, null, .Slime);
                 col_ent.state = slime.state; 
+
+                try entities.append(self.allocator, col_ent);
+            }
+        }
+
+        while (try self.queries.waves.next()) |b| {
+            for (b.entities, b.Position, b.Sprite, b.BoundingBox) |ent, pos, sprite, bbox| {
+                if (!bbox.active) continue;
+
+                const slime_ref = try self.prescient.ent.getEntityComponentData(ent, .SlimeRef); 
+                const col_ent = try getCollisionEntity(ent, pos, bbox, sprite, false, slime_ref.*, .Wave);
 
                 try entities.append(self.allocator, col_ent);
             }
@@ -68,20 +83,20 @@ pub const Collision = struct {
                     entity_a.y + entity_a.height > entity_b.y;
 
                 if (colliding) {
-                    if(entity_a.has_controller and entity_a.state == .attacking) {
-                        try self.prescient.ent.destroy(entity_b.id);
+                    if(entity_b.tag == .Wave and entity_a.tag == .Slime and entity_b.ent_ref.?.index != entity_a.id.index) {
+                        std.debug.print("wave id: {} | slime id: {}", .{entity_b.ent_ref.?.index, entity_a.id.index});
+                        //try self.prescient.ent.destroy(entity_a.id);
                     }
                     // Collision detected - handle collision response here
                     // std.debug.print("Collision between {} and {}\n", .{ entity_a.id, entity_b.id });
                     // std.debug.print("  A: x={d:.1}, y={d:.1}, w={d:.1}, h={d:.1}\n", .{ entity_a.x, entity_a.y, entity_a.width, entity_a.height });
                     // std.debug.print("  B: x={d:.1}, y={d:.1}, w={d:.1}, h={d:.1}\n", .{ entity_b.x, entity_b.y, entity_b.width, entity_b.height });
-                    // TODO: Add collision response logic (e.g., push apart, damage, events, etc.)
                 }
             }
         }
     }
 
-    fn getCollisionEntity(self: *Self, ent: Prescient.Entity, pos: comps.Position, bbox: comps.BoundingBox,  sprite: comps.Sprite) !CollisionEntity {
+    fn getCollisionEntity(ent: Prescient.Entity, pos: *comps.Position, bbox: *comps.BoundingBox,  sprite: *comps.Sprite, has_controller: bool, ent_ref: ?Prescient.Entity, tag: comp_name) !CollisionEntity {
 
         const unscaled_width = if (bbox.width > 0) bbox.width else sprite.source.width;
         const unscaled_height = if (bbox.height > 0) bbox.height else sprite.source.height;
@@ -104,7 +119,7 @@ pub const Collision = struct {
         bbox.bbox_width = width;
         bbox.bbox_height = height;
 
-        const has_controller = try self.prescient.ent.hasComponent(ent, .Controller);
+
         return  .{ 
             .id = ent,
             .x = bbox.bbox_x,
@@ -114,6 +129,8 @@ pub const Collision = struct {
             .active = bbox.active,
             .has_controller = has_controller,
             .state = null,
+            .tag = tag,
+            .ent_ref = ent_ref,
         };
     }
 };

@@ -10,7 +10,8 @@ pub const WaveFactory = struct {
 
     prescient: *Prescient,
     asset: [:0]const u8 = "assets/pixel_effects/17_felspell_spritesheet.png",
-    texture: raylib.Texture2D = undefined, 
+    texture: ?raylib.Texture2D = null,
+    texture_loaded: bool = false, 
     
     sprite_width: f32 = 100,
     sprite_height: f32 = 100,
@@ -22,34 +23,42 @@ pub const WaveFactory = struct {
     scale: f32 = 3,
 
     pub fn init() !Self {
-        var self = Self{.prescient = try Prescient.getPrescient()};
-        self.texture = try raylib.loadTexture(self.asset);
+        const self = Self{.prescient = try Prescient.getPrescient()};
         return self;
+    }
+
+    fn ensureTextureLoaded(self: *Self) !void {
+        if (!self.texture_loaded) {
+            self.texture = try raylib.loadTexture(self.asset);
+            self.texture_loaded = true;
+        }
     }
 
     pub fn spawn(self: *Self, args: struct {
         position: comp_types.Position,
         slime_ref: comp_types.SlimeRef,
     }) !Entity {
+        try self.ensureTextureLoaded();
+
         var sprite = comp_types.Sprite.initFromSpriteSheet(
-            self.sprite_width, 
-            self.sprite_height, 
-            self.sprite_cols, 
-            @intFromFloat(self.sprite_frames), 
-            self.sprite_frame_delay, 
+            self.sprite_width,
+            self.sprite_height,
+            self.sprite_cols,
+            @intFromFloat(self.sprite_frames),
+            self.sprite_frame_delay,
             self.scale
         );
-        
+
         sprite.animation_mode = .once;
 
         var pool = try self.prescient.getPool(.WavePool);
         return try pool.createEntity(.{
-            .Position = args.position, 
+            .Position = args.position,
             .SlimeRef = args.slime_ref,
             .Sprite = sprite,
-            .Texture = self.texture,
+            .Texture = self.texture.?,
             .Wave = .{},
-            .BoundingBox = .{},
+            .BoundingBox = Prescient.Components.Types.BoundingBox{.width = 45, .height = 45},
         });
     }
 };

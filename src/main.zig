@@ -15,14 +15,10 @@ pub fn main() !void {
     defer prescient.deinit();
     
     const Slime = Prescient.Factories.Slime{};
-    var Wave = try Prescient.Factories.WaveFactory.init();
 
-    prescient.getSystem(.Render).render_bounding_boxes = true;
+    prescient.getSystem(.Render).render_bounding_boxes = false;
     const player = try Slime.spawnPlayer(.{.x = 400, .y = 400}, .slime1);
     _ = try Slime.spawnEnemy(.{.x = 50, .y = 50}, .slime2); 
-    const wave = try Wave.spawn(.{.position = .{.x = 100, .y = 100,}, .slime_ref = player});
-
-    _ = wave;
 
     _ = try health_bar.spawn(player);
     _ = try energy_bar.spawn(player);
