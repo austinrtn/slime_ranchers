@@ -61,11 +61,18 @@ pub fn main() !void {
         \\    allocator: std.mem.Allocator,
         \\    active: bool = true,
         \\    queries: struct {{
-        \\        // Define your queries here
+        \\        // Example: movement: Query(.{{ .comps = &.{{.Position, .Velocity}} }}),
         \\    }},
         \\
         \\    pub fn update(self: *Self) !void {{
         \\        _ = self;
+        \\        // forEach (zero-allocation iteration):
+        \\        // try self.queries.movement.forEach(self, struct {{
+        \\        //     pub fn run(data: anytype, c: anytype) !bool {{
+        \\        //         c.Position.x += c.Velocity.dx * data.delta_time;
+        \\        //         return true;  // continue (return false to stop iteration)
+        \\        //     }}
+        \\        // }});
         \\    }}
         \\}};
         \\

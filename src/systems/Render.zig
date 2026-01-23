@@ -49,9 +49,14 @@ pub const Render = struct {
     }
 
     fn drawSprites(self: *Self) !void {
-        while(try self.queries.sprites.next()) |b| {
-            for(b.Position, b.Texture, b.Sprite) |pos, texture, sprite| {
-                if(!sprite.is_visible) continue;
+        try self.queries.sprites.forEach(self, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                _ = data;
+                const pos = c.Position;
+                const sprite = c.Sprite;
+                const texture = c.Texture;
+
+                if(!sprite.is_visible) return true;
 
                 // Destination rectangle (where to draw on screen)
                 // Position is where the origin/pivot point will be
@@ -76,23 +81,28 @@ pub const Render = struct {
                     sprite.rotation,
                     sprite.tint,
                 );
+                return true;
             }
-        }
-
+        });
     }
     
     fn drawStatusBars(self: *Self) !void {
-        while(try self.queries.status_bars.next()) |b| {
-            for(b.Position, b.StatusBar, b.Color) |pos, statusBar, color| {
-                const current_bar = statusBar.current_size;
-                const max_bar = statusBar.max_size;
+        try self.queries.status_bars.forEach(null, struct {
+            pub fn run(_: anytype, c: anytype) !bool {
+                const pos = c.Position;
+                const status_bar = c.StatusBar;
+                const color = c.Color;
+                const current_bar = status_bar.current_size;
+                const max_bar = status_bar.max_size;
+
                 const current_size_vect = raylib.Vector2{.x = current_bar.width, .y = current_bar.height};
                 const max_size_vect = raylib.Vector2{.x = max_bar.width, .y = max_bar.height};
 
                 raylib.drawRectangleV(pos.getVector(), max_size_vect, raylib.Color{.r = 128, .b = 128, .g = 128, .a = 155});
                 raylib.drawRectangleV(pos.getVector(), current_size_vect, color.*);
+                return true;
             }
-        }
+        });
     }
 
     fn drawCircles(self: *Self) !void {

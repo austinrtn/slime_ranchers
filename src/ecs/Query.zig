@@ -20,6 +20,8 @@ pub fn QueryType(comptime config: QT.QueryConfig) type {
         const pool_count = POOL_COUNT;
         pub const MASK = MaskManager.Comptime.createMask(components);
         pub const EXCLUDE_MASK = if (exclude) |exc| MaskManager.Comptime.createMask(exc) else 0;
+        /// Struct type passed to forEach handlers: .entity: Entity, .ComponentName: *ComponentType
+        pub const ComponentStruct = QT.ComponentPtrStruct(config);
 
         allocator: std.mem.Allocator,
         updated: bool = false,
@@ -273,6 +275,75 @@ pub fn QueryType(comptime config: QT.QueryConfig) type {
                     else => unreachable,
                 }
             }
+        }
+
+        /// Iterates over all matching entities, calling handler.run() for each.
+        /// For archetype pools: zero allocation, accesses contiguous storage directly.
+        ///
+        /// ctx: Any type for external state (delta_time, system ref, etc). Pass {} if not needed.
+        /// handler: Struct with `pub fn run(ctx: @TypeOf(ctx), comps: ComponentStruct) !bool`
+        ///          Return true to continue iteration, false to stop.
+        pub fn forEach(self: *Self, ctx: anytype, comptime handler: type) !void {
+            if (!@hasDecl(handler, "run")) {
+                @compileError("forEach handler must have a 'run' declaration");
+            }
+
+            inline for (std.meta.fields(QResultType)) |field| {
+                const pool_elem = &@field(self.query_storage, field.name);
+                const PoolElemType = @TypeOf(pool_elem.*);
+
+                if (PoolElemType.STORAGE_STRATEGY == .ARCHETYPE) {
+                    if (!try self.forEachArchetype(ctx, handler, pool_elem)) return;
+                } else {
+                    if (!try self.forEachSparse(ctx, handler, pool_elem)) return;
+                }
+            }
+        }
+
+        fn forEachArchetype(self: *Self, ctx: anytype, comptime handler: type, pool_elem: anytype) !bool {
+            const PoolElemType = @TypeOf(pool_elem.*);
+            const pool = self.pool_manager.getOrCreatePool(PoolElemType.POOL_NAME) catch unreachable;
+
+            for (pool_elem.archetype_indices.items) |arch_idx| {
+                const storage = &pool.archetype_list.items[arch_idx];
+                const entity_count = storage.entities.items.len;
+
+                for (0..entity_count) |i| {
+                    var comp_struct: ComponentStruct = undefined;
+                    comp_struct.entity = storage.entities.items[i];
+
+                    inline for (components) |comp| {
+                        const field_name = @tagName(comp);
+                        const items = @field(storage, field_name).?.items;
+                        @field(comp_struct, field_name) = &items[i];
+                    }
+
+                    if (!try handler.run(ctx, comp_struct)) return false;
+                }
+            }
+            return true;
+        }
+
+        fn forEachSparse(self: *Self, ctx: anytype, comptime handler: type, pool_elem: anytype) !bool {
+            const PoolElemType = @TypeOf(pool_elem.*);
+            const pool = self.pool_manager.getOrCreatePool(PoolElemType.POOL_NAME) catch unreachable;
+
+            for (pool_elem.sparse_cache.items) |v_arch_index| {
+                const storage_indexes = pool.virtual_archetypes.items[v_arch_index];
+
+                for (storage_indexes.items) |ent_index| {
+                    var comp_struct: ComponentStruct = undefined;
+                    comp_struct.entity = pool.storage.entities.items[ent_index].?;
+
+                    inline for (components) |comp| {
+                        const field_name = @tagName(comp);
+                        @field(comp_struct, field_name) = &(@field(pool.storage, field_name).items[ent_index].?);
+                    }
+
+                    if (!try handler.run(ctx, comp_struct)) return false;
+                }
+            }
+            return true;
         }
     };
 }

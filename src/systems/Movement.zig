@@ -14,16 +14,26 @@ pub const Movement = struct {
 
     allocator: std.mem.Allocator,
     active: bool = true,
+    frame_time: f32 = 0,
     queries: struct {
         objs: Query(.{ .comps = &.{.Position, .Velocity} }),
     },
 
+    pub fn init(self: *Self) !void {
+        self.frame_time = raylib.getFrameTime(); 
+    }
+
     pub fn update(self: *Self) !void {
-        while(try self.queries.objs.next()) |b| {
-            for(b.Position, b.Velocity) |pos, vel| {
-                pos.x += vel.dx * raylib.getFrameTime();
-                pos.y += vel.dy * raylib.getFrameTime();
+        try self.queries.objs.forEach(self, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                const pos = c.Position;
+                const vel = c.Velocity;
+
+                pos.x += vel.dx * data.frame_time;
+                pos.y += vel.dy * data.frame_time;
+                return true;
             }
-        }
+        });
+        self.frame_time = raylib.getFrameTime();
     }
 };

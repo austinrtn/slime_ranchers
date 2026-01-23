@@ -60,6 +60,46 @@ pub fn ArchetypeCacheType(comptime config: QueryConfig) type {
     });
 }
 
+/// Generates struct type for forEach callbacks with single component pointers.
+/// Fields: .entity: Entity, .ComponentName: *ComponentType
+/// Unlike ArchetypeCacheType which has []*T, this has *T for direct per-entity access.
+pub fn ComponentPtrStruct(comptime config: QueryConfig) type {
+    const components = config.comps;
+    var fields: [components.len + 1]StructField = undefined;
+
+    // entity field (single entity, not slice)
+    fields[0] = StructField{
+        .name = "entity",
+        .type = Entity,
+        .alignment = @alignOf(Entity),
+        .default_value_ptr = null,
+        .is_comptime = false,
+    };
+
+    // Component pointer fields (*T, not []*T)
+    for (components, 1..) |comp, i| {
+        const name = @tagName(comp);
+        const T = *CR.getTypeByName(comp);
+        fields[i] = StructField{
+            .name = name,
+            .type = T,
+            .alignment = @alignOf(T),
+            .default_value_ptr = null,
+            .is_comptime = false,
+        };
+    }
+
+    return @Type(.{
+        .@"struct" = .{
+            .fields = &fields,
+            .layout = .auto,
+            .is_tuple = false,
+            .backing_integer = null,
+            .decls = &.{},
+        },
+    });
+}
+
 /// PoolElementType - One type PER pool with comptime constants
 /// This allows Query to access pool info at comptime without inline switch
 pub fn PoolElementType(comptime pool_name: PR.PoolName, comptime config: QueryConfig) type {
