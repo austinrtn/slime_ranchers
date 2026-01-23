@@ -101,6 +101,11 @@ pub const Prescient = struct {
         self._pool_manager.flushNewAndReallocatingLists();
     }
 
+    pub fn flush(self: *Self) !void {
+        try self._pool_manager.flushAllPools(&self._entity_manager);
+        self._pool_manager.flushNewAndReallocatingLists();
+    }
+
     pub fn getPool(self: *Self, comptime pool_name: PR.PoolName) !PoolInterface(pool_name) {
         const pool = try self._pool_manager.getOrCreatePool(pool_name);
         return PoolInterface(pool_name).init(pool, &self._entity_manager);

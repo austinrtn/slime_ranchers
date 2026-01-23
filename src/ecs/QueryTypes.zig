@@ -11,6 +11,7 @@ const Entity = @import("EntityManager.zig").Entity;
 pub const QueryConfig = struct {
     comps: []const CR.ComponentName,
     exclude: ?[]const CR.ComponentName = null,
+    pools: ?[]const PR.PoolName = null,
 };
 
 // Determines how a pool's archetypes are accessed during query iteration
@@ -73,12 +74,32 @@ pub fn PoolElementType(comptime pool_name: PR.PoolName, comptime config: QueryCo
     };
 }
 
+/// Check if a pool should be included based on the pools filter
+fn shouldIncludePool(comptime config: QueryConfig, comptime pool_index: usize) bool {
+    if (config.pools) |pool_filter| {
+        const pool_name: PR.PoolName = @enumFromInt(pool_index);
+        for (pool_filter) |allowed_pool| {
+            if (pool_name == allowed_pool) {
+                return true;
+            }
+        }
+        return false;
+    }
+    // No filter means include all pools
+    return true;
+}
+
 pub fn countMatchingPools(comptime config: QueryConfig) comptime_int {
     const components = config.comps;
     const exclude = config.exclude;
     var count: comptime_int = 0;
 
-    for(PR.pool_types) |pool_type| {
+    for(PR.pool_types, 0..) |pool_type, i| {
+        // Pool filter check (FIRST)
+        if (!shouldIncludePool(config, i)) {
+            continue;
+        }
+
         var query_match = true;
         var req_match = true;
         var excluded = false;
@@ -143,6 +164,11 @@ fn findMatchingPools(comptime config: QueryConfig) [countMatchingPools(config)]P
     var idx: usize = 0;
 
     for(PR.pool_types, 0..) |pool_type, i| {
+        // Pool filter check (FIRST)
+        if (!shouldIncludePool(config, i)) {
+            continue;
+        }
+
         var query_match = true;
         var req_match = true;
         var excluded = false;

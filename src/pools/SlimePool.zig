@@ -25,5 +25,5 @@ pub const SlimePool = EntityPool(.{
     .name = .SlimePool,
     .components = pool_components,
     .req = req_components,
-    .storage_strategy = .SPARSE,
+    .storage_strategy = .ARCHETYPE,
 });

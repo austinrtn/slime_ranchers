@@ -60,7 +60,7 @@ pub fn main() !void {
         "    }}\n" ++
         "\n" ++
         "    pub fn spawn(self: *Self) !Entity {{\n" ++
-        "        const pool = try self.prescient.getPool(.GeneralPool);\n" ++
+        "        var pool = try self.prescient.getPool(.GeneralPool);\n" ++
         "        return try pool.createEntity(.{{\n" ++
         "              //Add components here:\n" ++
         "              // .Position = .{{.x = 0, .y = 0}},\n" ++
