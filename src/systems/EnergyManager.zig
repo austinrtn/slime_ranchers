@@ -19,8 +19,11 @@ pub const EnergyManager = struct {
     },
 
     pub fn update(self: *Self) !void {
-        while(try self.queries.slimes.next()) |b| {
-            for(b.Energy, b.Slime) |energy, slime| {
+        try self.queries.slimes.forEach(null, struct{
+            pub fn run(_: anytype, c: anytype) !bool {
+                const energy = c.Energy;
+                const slime = c.Slime;
+
                 // Recover energy while idling
                 if(energy.energy < energy.max_energy and (slime.state == .idling or slime.state == .recovering)) {
                     energy.energy += energy.regen_per_frame * raylib.getFrameTime();
@@ -30,9 +33,9 @@ pub const EnergyManager = struct {
                 if(slime.state == .recovering) {
                     if(energy.energy >= energy.min_req){
                         slime.state = .idling;
-                        break;
+                        return true;
                     }
-                    continue;
+                    return true;
                 }
 
                 // Spend Energy While Moving
@@ -65,7 +68,8 @@ pub const EnergyManager = struct {
                     energy.energy = 0;
                     slime.state = .recovering;
                 }
+                return true;
             }
-        }
+        });
     }
 };

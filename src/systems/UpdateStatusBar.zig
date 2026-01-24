@@ -18,25 +18,27 @@ pub const UpdateStatusBar = struct {
     },
 
     pub fn update(self: *Self) !void {
-        var prescient = try Prescient.getPrescient();
+        const prescient = try Prescient.getPrescient();
 
-        while(try self.queries.status_bars.next()) |b| {
-            for(b.StatusBar) |status_bar| {
+        try self.queries.status_bars.forEach(prescient, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                const status_bar = c.StatusBar;
                 var current_value: f32 = 0;
                 var max_value: f32 = 0;
 
                 if(status_bar.status_type == .energy) {
-                    const energy_comp = try prescient.ent.getEntityComponentData(status_bar.entity_link, .Energy); 
+                    const energy_comp = try data.ent.getEntityComponentData(status_bar.entity_link, .Energy);
                     current_value = energy_comp.energy;
                     max_value = energy_comp.max_energy;
                 } else if(status_bar.status_type == .health){
-                    const health_comp = try prescient.ent.getEntityComponentData(status_bar.entity_link, .Health); 
+                    const health_comp = try data.ent.getEntityComponentData(status_bar.entity_link, .Health);
                     current_value = health_comp.health;
                     max_value = health_comp.max_health;
                 }
                 const percent = current_value / max_value;
                 status_bar.current_size.width = status_bar.max_size.width * percent;
+                return true;
             }
-        }
+        });
     }
 };

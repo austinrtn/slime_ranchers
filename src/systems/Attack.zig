@@ -19,11 +19,15 @@ pub const Attack = struct {
     },
 
     pub fn update(self: *Self) !void {
-        while(try self.queries.slime.next()) |b| {
-            for(b.Slime, b.Attack, b.Energy) |slime, atk, energy| {
+        try self.queries.slime.forEach(null, struct{
+            pub fn run(_: anytype, c: anytype) !bool {
+                const slime = c.Slime;
+                const atk = c.Attack;
+                const energy = c.Energy;
+
                 if(
-                    slime.state == .recovering or 
-                    slime.state == .attacking or 
+                    slime.state == .recovering or
+                    slime.state == .attacking or
                     (energy.energy - energy.attack_cost) < 0 or
                     atk.recovering
                 ){
@@ -36,7 +40,8 @@ pub const Attack = struct {
                         atk.recovering = false;
                     }
                 }
+                return true;
             }
-        }
+        });
     }
 };

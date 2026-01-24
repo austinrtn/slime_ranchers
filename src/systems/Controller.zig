@@ -24,8 +24,14 @@ pub const Controller = struct {
     }
 
     pub fn update(self: *Self) !void {
-        while(try self.queries.controllables.next()) |b| {
-            for(b.entities, b.Slime, b.Velocity, b.Speed, b.Sprite, b.Attack) |ent, slime, vel, spd, sprite, atk| {
+        try self.queries.controllables.forEach(self, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                const ent = c.entity;
+                const slime = c.Slime;
+                const vel = c.Velocity;
+                const spd = c.Speed;
+                const sprite = c.Sprite;
+                const atk = c.Attack;
 
                 if(slime.state == .attacking) {
                     if(sprite.animation_complete) {
@@ -39,18 +45,18 @@ pub const Controller = struct {
                     sprite.animation_complete = false;
                     slime.state = .attacking;
                     //var factory = Prescient.Factory.WaveFactory.init();
-                    _ = try self.wave_factory.spawn(.{ .position = .{.x = 0, .y = 0}, .slime_ref = ent});
+                    _ = try data.wave_factory.spawn(.{ .position = .{.x = 0, .y = 0}, .slime_ref = ent});
                 }
                 if(slime.state != .attacking and slime.state != .recovering){
                     //UP & DOWN
                     if(raylib.isKeyDown(.down)) {
                         vel.dy = spd.*;
                         slime.state = .moving;
-                    } 
+                    }
                     else if(raylib.isKeyDown(.up)) {
                         vel.dy = -1 * spd.*;
                         slime.state = .moving;
-                    } 
+                    }
                     else {
                         vel.dy = 0;
                     }
@@ -58,7 +64,7 @@ pub const Controller = struct {
                     if(raylib.isKeyDown(.left)) {
                         vel.dx = -1 * spd.*;
                         slime.state = .moving;
-                    } 
+                    }
                     else if(raylib.isKeyDown(.right)) {
                         vel.dx = spd.*;
                         slime.state = .moving;
@@ -68,8 +74,8 @@ pub const Controller = struct {
                     }
                 }
                 if (
-                    slime.state != .attacking 
-                    and slime.state != .recovering and 
+                    slime.state != .attacking
+                    and slime.state != .recovering and
                     (raylib.isKeyUp(.up) and raylib.isKeyUp(.down) and raylib.isKeyUp(.left) and raylib.isKeyUp(.right))
                 ) {
                     slime.state = .idling;
@@ -79,7 +85,8 @@ pub const Controller = struct {
                     vel.dx = 0;
                     vel.dy = 0;
                 }
+                return true;
             }
-        }
+        });
     }
 };

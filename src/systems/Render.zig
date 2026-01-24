@@ -118,16 +118,16 @@ pub const Render = struct {
         try self.queries.rectangles.forEach(self, struct {
             pub fn run(_:anytype, c: anytype) !bool {
                 raylib.drawRectangleV(c.Position.getVector(), c.Rectangle.getVector(), c.Color.*);
-                _ = c.Health;
-                return true;          
+                return true;
             }
         });
     }
 
     fn drawBoundingBoxes(self: *Self) !void {
-        while(try self.queries.bounding_boxes.next()) |b| {
-            for(b.BoundingBox) |bbox| {
-                if (!bbox.active) continue;
+        try self.queries.bounding_boxes.forEach(null, struct{
+            pub fn run(_: anytype, c: anytype) !bool {
+                const bbox = c.BoundingBox;
+                if (!bbox.active) return true;
 
                 raylib.drawRectangleLinesEx(
                     .{
@@ -139,8 +139,9 @@ pub const Render = struct {
                     2.0,
                     .red
                 );
+                return true;
             }
-        }
+        });
     }
 
     pub fn deinit(self: *Self) void {

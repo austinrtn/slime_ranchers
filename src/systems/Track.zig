@@ -20,10 +20,13 @@ pub const Track = struct {
     },
 
     pub fn update(self: *Self) !void {
-        while(try self.queries.objs.next()) |b| {
-            for(b.Position, b.Velocity) |pos, vel| {
+        try self.queries.objs.forEach(self, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                const pos = c.Position;
+                const vel = c.Velocity;
+
                 const pos_vect = Raylib.Vector2{.x = pos.x, .y = pos.y};
-                const mouse = Raylib.getMousePosition();  
+                const mouse = Raylib.getMousePosition();
 
                 const dist = Raylib.Vector2.subtract(mouse, pos_vect);
                 const length = Raylib.Vector2.length(dist);
@@ -31,14 +34,15 @@ pub const Track = struct {
                 if(length > 150) {
                     vel.dx = 0;
                     vel.dy = 0;
-                    continue;
+                    return true;
                 }
 
-                const velocity = Raylib.Vector2.scale(Raylib.Vector2.normalize(dist), self.speed);
+                const velocity = Raylib.Vector2.scale(Raylib.Vector2.normalize(dist), data.speed);
 
                 vel.dx = velocity.x;
                 vel.dy = velocity.y;
+                return true;
             }
-        }
+        });
     }
 };

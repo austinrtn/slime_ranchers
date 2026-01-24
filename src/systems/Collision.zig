@@ -50,28 +50,41 @@ pub const Collision = struct {
         defer entities.clearRetainingCapacity();
 
         // Gather all collidable entities with their bounding boxes
-        while (try self.queries.slimes.next()) |b| {
-            for (b.entities, b.Position, b.Sprite, b.BoundingBox, b.Slime) |ent, pos, sprite, bbox, slime| {
-                if (!bbox.active) continue;
+        try self.queries.slimes.forEach(self, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                const ent = c.entity;
+                const pos = c.Position;
+                const sprite = c.Sprite;
+                const bbox = c.BoundingBox;
+                const slime = c.Slime;
 
-                const has_controller = try self.prescient.ent.hasComponent(ent, .Controller);
+                if (!bbox.active) return true;
+
+                const has_controller = try data.prescient.ent.hasComponent(ent, .Controller);
                 var col_ent = try getCollisionEntity(ent, pos, bbox, sprite, has_controller, null, .Slime);
-                col_ent.state = slime.state; 
+                col_ent.state = slime.state;
 
-                try entities.append(self.allocator, col_ent);
+                try data.entities.append(data.allocator, col_ent);
+                return true;
             }
-        }
+        });
 
-        while (try self.queries.waves.next()) |b| {
-            for (b.entities, b.Position, b.Sprite, b.BoundingBox) |ent, pos, sprite, bbox| {
-                if (!bbox.active) continue;
+        try self.queries.waves.forEach(self, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                const ent = c.entity;
+                const pos = c.Position;
+                const sprite = c.Sprite;
+                const bbox = c.BoundingBox;
 
-                const slime_ref = try self.prescient.ent.getEntityComponentData(ent, .SlimeRef); 
+                if (!bbox.active) return true;
+
+                const slime_ref = try data.prescient.ent.getEntityComponentData(ent, .SlimeRef);
                 const col_ent = try getCollisionEntity(ent, pos, bbox, sprite, false, slime_ref.*, .Wave);
 
-                try entities.append(self.allocator, col_ent);
+                try data.entities.append(data.allocator, col_ent);
+                return true;
             }
-        }
+        });
 
         // Check for collisions between all pairs of entities
         for (entities.items, 0..) |entity_a, i| {

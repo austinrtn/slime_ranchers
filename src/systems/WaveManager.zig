@@ -20,22 +20,28 @@ pub const WaveManager = struct {
     },
 
     pub fn update(self: *Self) !void {
-        var prescient = try Prescient.getPrescient();
+        const prescient = try Prescient.getPrescient();
 
-        while(try self.queries.waves.next()) |b| {
-            for(b.entities, b.Position, b.SlimeRef, b.Sprite, b.Wave) |ent, pos, ref, sprite, wave| {
-                const slime = try prescient.ent.getEntityComponentData(ref.*, .Slime);
-                const slime_pos = try prescient.ent.getEntityComponentData(ref.*, .Position);
+        try self.queries.waves.forEach(prescient, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                const ent = c.entity;
+                const pos = c.Position;
+                const ref = c.SlimeRef;
+                const sprite = c.Sprite;
+                const wave = c.Wave;
+
+                const slime = try data.ent.getEntityComponentData(ref.*, .Slime);
+                const slime_pos = try data.ent.getEntityComponentData(ref.*, .Position);
 
                 pos.* = slime_pos.*;
 
-                if(slime.last_state == .attacking and slime.state != .attacking) { 
-                    wave.active = true; 
+                if(slime.last_state == .attacking and slime.state != .attacking) {
+                    wave.active = true;
                 }
 
                 wave.time_acc+= raylib.getFrameTime();
                 if(wave.time_acc >= wave.anim_length) {
-                    var pool = try prescient.getPool(.WavePool);
+                    var pool = try data.getPool(.WavePool);
                     try pool.destroyEntity(ent);
                 }
 
@@ -44,7 +50,7 @@ pub const WaveManager = struct {
                 sprite.scale = wave.start_scale + (wave.end_scale * percent_acc);
 
                 const min_alpha: f32 = 50.0;
-                const alpha: u8 = 
+                const alpha: u8 =
                     @intFromFloat(255.0 - ((255.0 - min_alpha) * percent_acc));
 
                 sprite.tint.a = alpha;
@@ -59,7 +65,8 @@ pub const WaveManager = struct {
                     sprite.tint.a = 255;
                     wave.opacity_acc = 255;
                 }
+                return true;
             }
-        }
+        });
     }
 };

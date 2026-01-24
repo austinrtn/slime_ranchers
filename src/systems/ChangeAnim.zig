@@ -19,9 +19,14 @@ pub const ChangeAnim = struct {
     },
 
     pub fn update(self: *Self) !void {
-        while(try self.queries.slimes.next()) |b| {
-            for(b.Slime, b.Texture, b.Sprite, b.BoundingBox) |slime, texture, sprite, bbox| {
-                if(slime.state == slime.last_state) continue;
+        try self.queries.slimes.forEach(null, struct{
+            pub fn run(_: anytype, c: anytype) !bool {
+                const slime = c.Slime;
+                const texture = c.Texture;
+                const sprite = c.Sprite;
+                const bbox = c.BoundingBox;
+
+                if(slime.state == slime.last_state) return true;
 
                 sprite.frame_index = 0;
                 sprite.delay_counter = 0;
@@ -51,7 +56,8 @@ pub const ChangeAnim = struct {
                 }
                 texture.* = slime.current_texture;
                 slime.last_state = slime.state;
+                return true;
             }
-        }
+        });
     }
 };

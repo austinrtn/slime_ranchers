@@ -18,10 +18,11 @@ pub const Animate = struct {
     },
 
     pub fn update(self: *Self) !void {
-        while(try self.queries.sprites.next()) |b| {
-            for(b.Sprite) |sprite| {
-                sprite.nextFrame();
+        try self.queries.sprites.forEach(null, struct{
+            pub fn run(_: anytype, c: anytype) !bool {
+                c.Sprite.nextFrame();
+                return true;
             }
-        }
+        });
     }
 };
