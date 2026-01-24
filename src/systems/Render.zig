@@ -106,19 +106,22 @@ pub const Render = struct {
     }
 
     fn drawCircles(self: *Self) !void {
-        while(try self.queries.circles.next()) |b| {
-            for(b.Position, b.Circle, b.Color) |pos, circle, color| {
-                raylib.drawCircleV(pos.getVector(), circle.radius, color.*);
+        try self.queries.circles.forEach(self, struct{
+            pub fn run(_:anytype, c: anytype) !bool{
+                raylib.drawCircleV(c.Position.getVector(), c.Circle.radius, c.Color.*);
+                return true;
             }
-        }
+        });
     }
 
     fn drawRectangles(self: *Self) !void {
-        while(try self.queries.rectangles.next()) |b| {
-            for(b.Position, b.Rectangle, b.Color) |pos, rect, color| {
-                raylib.drawRectangleV(pos.getVector(), rect.getVector(), color.*);
+        try self.queries.rectangles.forEach(self, struct {
+            pub fn run(_:anytype, c: anytype) !bool {
+                raylib.drawRectangleV(c.Position.getVector(), c.Rectangle.getVector(), c.Color.*);
+                _ = c.Health;
+                return true;          
             }
-        }
+        });
     }
 
     fn drawBoundingBoxes(self: *Self) !void {
