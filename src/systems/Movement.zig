@@ -7,16 +7,13 @@ const raylib = @import("raylib");
 
 pub const Movement = struct {
     const Self = @This();
-
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{};
+    pub const runs_before = &.{.WaveManager};
 
     allocator: std.mem.Allocator,
     active: bool = true,
     frame_time: f32 = 0,
     queries: struct {
-        objs: Query(.{ .comps = &.{.Position, .Velocity} }),
+        objs: Query(.{.read = &.{.Velocity}, .write = &.{.Position}}),
     },
 
     pub fn init(self: *Self) !void {

@@ -47,29 +47,34 @@ pub fn main() !void {
     const template = try std.fmt.allocPrint(allocator,
         \\const std = @import("std");
         \\const Prescient = @import("../ecs/Prescient.zig").Prescient;
-        \\const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
+        \\const SR = @import("../registries/SystemRegistry.zig");
         \\const Query = @import("../ecs/Query.zig").QueryType;
         \\const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
         \\
         \\pub const {s} = struct {{
         \\    const Self = @This();
         \\
-        \\    // Dependency declarations for compile-time system ordering
-        \\    pub const reads = [_]type{{}};
-        \\    pub const writes = [_]type{{}};
+        \\    // Optional: resolve write-write conflicts with other systems
+        \\    // pub const runs_before = &[_]SR.SystemName{{ .OtherSystem }};
         \\
         \\    allocator: std.mem.Allocator,
         \\    active: bool = true,
         \\    queries: struct {{
-        \\        // Example: movement: Query(.{{ .comps = &.{{.Position, .Velocity}} }}),
+        \\        // Example query with read/write separation:
+        \\        // movement: Query(.{{
+        \\        //     .read = &.{{.Velocity}},   // *const T - cannot mutate
+        \\        //     .write = &.{{.Position}},  // *T - can mutate (implies read access)
+        \\        // }}),
         \\    }},
         \\
         \\    pub fn update(self: *Self) !void {{
         \\        _ = self;
         \\        // forEach (zero-allocation iteration):
         \\        // try self.queries.movement.forEach(self, struct {{
-        \\        //     pub fn run(data: anytype, c: anytype) !bool {{
-        \\        //         c.Position.x += c.Velocity.dx * data.delta_time;
+        \\        //     pub fn run(ctx: anytype, c: anytype) !bool {{
+        \\        //         // c.Velocity is *const Velocity (read-only)
+        \\        //         // c.Position is *Position (mutable)
+        \\        //         c.Position.x += c.Velocity.dx;
         \\        //         return true;  // continue (return false to stop iteration)
         \\        //     }}
         \\        // }});

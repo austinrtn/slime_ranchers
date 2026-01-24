@@ -14,7 +14,7 @@ pub const UpdateStatusBar = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        status_bars: Query(.{ .comps = &.{.StatusBar} }),
+        status_bars: Query(.{.read = &.{}, .write = &.{.StatusBar}}),
     },
 
     pub fn update(self: *Self) !void {

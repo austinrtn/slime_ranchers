@@ -6,24 +6,16 @@ const EM = @import("EntityManager.zig");
 const PM = @import("PoolManager.zig");
 const SM = @import("SystemManager.zig");
 const PI = @import("PoolInterface.zig");
+const SDG = @import("SystemDependencyGraph.zig");
 const factoryTypes = @import("../registries/FactoryRegistry.zig").factoryTypes;
 const Query = @import("Query.zig").QueryType;
 const QueryConfig = @import("QueryTypes.zig").QueryConfig;
 const Global = @import("../Global.zig").Global;
 const PoolInterface = PI.PoolInterfaceType;
 
-pub const system_sequence = [_]SR.SystemName{
-    .Controller,
-    .Movement,
-    .WaveManager, 
-    .Collision,
-    .Attack,
-    .EnergyManager,
-    .ChangeAnim,
-    .Animate,
-    .UpdateStatusBar,
-    .Render,
-};
+/// Automatically sorted system sequence based on component dependencies
+/// Uses all systems from SystemRegistry and sorts them by read/write dependencies
+pub const system_sequence = SDG.sortSystems(std.meta.tags(SR.SystemName));
 
 pub const Prescient = struct {
     pub const Entity = EM.Entity;
@@ -127,8 +119,8 @@ pub const Prescient = struct {
         return Query(config).init(self._allocator, self._pool_manager);
     }
 
-    pub fn queryPool(self: *Self, comptime pool: PR.PoolName) !Query(.{ .comps = PR.getPoolFromName(pool).COMPONENTS }) {
-        return Query(.{ .comps = PR.getPoolFromName(pool).COMPONENTS }).init(self._allocator, self._pool_manager);
+    pub fn queryPool(self: *Self, comptime pool: PR.PoolName) !Query(.{ .write = PR.getPoolFromName(pool).COMPONENTS }) {
+        return Query(.{ .write = PR.getPoolFromName(pool).COMPONENTS }).init(self._allocator, self._pool_manager);
     }
 };
 

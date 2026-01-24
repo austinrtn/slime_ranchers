@@ -7,15 +7,12 @@ const raylib = @import("raylib");
 
 pub const ChangeAnim = struct {
     const Self = @This();
-
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{};
+    pub const runs_before = &.{ .Animate, .Collision };
 
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slimes: Query(.{ .comps = &.{.Slime, .Texture, .Sprite, .BoundingBox} }),
+        slimes: Query(.{.read = &.{}, .write = &.{.Sprite, .Texture, .BoundingBox, .Slime}}),
     },
 
     pub fn update(self: *Self) !void {

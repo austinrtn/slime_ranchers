@@ -7,15 +7,13 @@ const raylib = @import("raylib");
 
 pub const Attack = struct {
     const Self = @This();
-
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{};
+    // Removed runs_before - EnergyManager writes Slime which Attack reads,
+    // so EnergyManager should run first (component dependency handles this)
 
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slime: Query(.{ .comps = &.{.Slime, .Attack, .Energy} }),
+        slime: Query(.{.read = &.{.Slime, .Energy}, .write = &.{.Attack}}),
     },
 
     pub fn update(self: *Self) !void {

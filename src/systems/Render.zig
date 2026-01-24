@@ -22,12 +22,12 @@ pub const Render = struct {
     render_bounding_boxes: bool = false,
 
     queries: struct {
-        textures: Query(.{ .comps = &.{.Position, .Texture} }),
-        sprites: Query(.{ .comps = &.{.Position, .Texture, .Sprite} }),
-        rectangles: Query(.{ .comps = &.{.Position, .Rectangle, .Color} }),
-        circles: Query(.{ .comps = &.{.Position, .Circle, .Color} }),
-        status_bars: Query(.{ .comps = &.{.Position, .StatusBar, .Color} }),
-        bounding_boxes: Query(.{.comps = &.{.BoundingBox}}),
+        textures: Query(.{.read = &.{.Position, .Texture}, .write = &.{}}),
+        sprites: Query(.{.read = &.{.Position, .Texture, .Sprite}, .write = &.{}}),
+        rectangles: Query(.{.read = &.{.Position, .Rectangle, .Color}, .write = &.{}}),
+        circles: Query(.{.read = &.{.Position, .Circle, .Color}, .write = &.{}}),
+        status_bars: Query(.{.read = &.{.Position, .StatusBar, .Color}, .write = &.{}}),
+        bounding_boxes: Query(.{.read = &.{.BoundingBox}, .write = &.{}}),
     },
 
     pub fn init(self: *Self) !void {

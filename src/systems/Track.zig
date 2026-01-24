@@ -8,15 +8,15 @@ const Raylib = @import("raylib");
 pub const Track = struct {
     const Self = @This();
 
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{};
+    // Track calculates velocity based on position, then Movement/WaveManager apply it
+    // Override component deps: Track reads Position which Movement/WaveManager write
+    pub const runs_before = &.{ .Movement, .WaveManager };
 
     allocator: std.mem.Allocator,
     active: bool = true,
     speed: f32 = 150,
     queries: struct {
-        objs: Query(.{ .comps = &.{.Position, .Velocity} }),
+        objs: Query(.{.read = &.{.Position}, .write = &.{.Velocity}}),
     },
 
     pub fn update(self: *Self) !void {

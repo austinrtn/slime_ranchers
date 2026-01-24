@@ -7,16 +7,13 @@ const raylib = @import("raylib");
 
 pub const Controller = struct {
     const Self = @This();
-
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{};
+    pub const runs_before = &.{.Animate, .Attack, .ChangeAnim, .EnergyManager, .Track, .WaveManager};
 
     allocator: std.mem.Allocator,
     active: bool = true,
     wave_factory: Prescient.Factories.WaveFactory = undefined, 
     queries: struct {
-        controllables: Query(.{ .comps = &.{.Slime, .Sprite, .Controller, .Velocity, .Speed, .Attack} }),
+        controllables: Query(.{.read = &.{.Controller, .Speed}, .write = &.{.Slime, .Sprite, .Velocity, .Attack}}),
     },
 
     pub fn init(self: *Self) !void {

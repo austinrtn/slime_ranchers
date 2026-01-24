@@ -7,6 +7,7 @@ const raylib = @import("raylib");
 
 pub const WaveManager = struct {
     const Self = @This();
+    pub const runs_before = &.{.Animate, .ChangeAnim};
 
     // Dependency declarations for compile-time system ordering
     pub const reads = [_]type{};
@@ -16,7 +17,7 @@ pub const WaveManager = struct {
     active: bool = true,
     
     queries: struct {
-        waves: Query(.{ .comps = &.{.Position, .SlimeRef, .Sprite, .Wave}}),
+        waves: Query(.{.read = &.{.SlimeRef}, .write = &.{.Position, .Sprite, .Wave}}),
     },
 
     pub fn update(self: *Self) !void {

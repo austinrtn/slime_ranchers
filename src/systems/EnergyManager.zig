@@ -7,15 +7,12 @@ const raylib = @import("raylib");
 
 pub const EnergyManager = struct {
     const Self = @This();
-
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{};
+    pub const runs_before = &.{.ChangeAnim};
 
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        slimes: Query(.{ .comps = &.{.Energy, .Slime} }),
+        slimes: Query(.{.read = &.{}, .write = &.{.Energy, .Slime}}),
     },
 
     pub fn update(self: *Self) !void {

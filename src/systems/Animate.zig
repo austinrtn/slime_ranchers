@@ -7,14 +7,10 @@ const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 pub const Animate = struct {
     const Self = @This();
 
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{.Sprite};
-
     allocator: std.mem.Allocator,
     active: bool = true,
     queries: struct {
-        sprites: Query(.{ .comps = &.{.Sprite} }),
+        sprites: Query(.{.read = &.{}, .write = &.{.Sprite}}),
     },
 
     pub fn update(self: *Self) !void {

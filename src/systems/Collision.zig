@@ -10,10 +10,6 @@ const comp_name = Prescient.Components.Names;
 pub const Collision = struct {
     const Self = @This();
 
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{};
-
     const CollisionEntity = struct {
         id: Prescient.Entity,
         x: f32,
@@ -31,8 +27,8 @@ pub const Collision = struct {
     entities: std.ArrayList(CollisionEntity) = .{},
     active: bool = true,
     queries: struct {
-        slimes: Query(.{.comps = &.{.Position, .Slime, .Sprite, .BoundingBox}}),
-        waves: Query(.{.comps = &.{.Wave, .Position, .Sprite, .BoundingBox}}),
+        slimes: Query(.{.read = &.{.Position, .Sprite, .Slime}, .write = &.{.BoundingBox}}),
+        waves: Query(.{.read = &.{.Position, .Sprite, .Wave}, .write = &.{.BoundingBox}}),
     },
     prescient: *Prescient = undefined,
 
@@ -109,7 +105,7 @@ pub const Collision = struct {
         }
     }
 
-    fn getCollisionEntity(ent: Prescient.Entity, pos: *comps.Position, bbox: *comps.BoundingBox,  sprite: *comps.Sprite, has_controller: bool, ent_ref: ?Prescient.Entity, tag: comp_name) !CollisionEntity {
+    fn getCollisionEntity(ent: Prescient.Entity, pos: *const comps.Position, bbox: *comps.BoundingBox, sprite: *const comps.Sprite, has_controller: bool, ent_ref: ?Prescient.Entity, tag: comp_name) !CollisionEntity {
 
         const unscaled_width = if (bbox.width > 0) bbox.width else sprite.source.width;
         const unscaled_height = if (bbox.height > 0) bbox.height else sprite.source.height;
