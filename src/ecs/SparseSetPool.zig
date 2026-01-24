@@ -369,12 +369,7 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
                     const field_value = @field(component_data, field_name);
 
                     // Check if field is optional at comptime, unwrap at runtime if needed
-                    const is_optional = comptime blk: {
-                        const field_info = for (std.meta.fields(Builder)) |f| {
-                            if (std.mem.eql(u8, f.name, field_name)) break f;
-                        } else unreachable;
-                        break :blk @typeInfo(field_info.type) == .optional;
-                    };
+                    const is_optional = comptime @typeInfo(@FieldType(Builder, field_name)) == .optional;
 
                     const unwrapped = if (is_optional) field_value.? else field_value;
 

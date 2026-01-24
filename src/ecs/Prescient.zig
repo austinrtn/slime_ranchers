@@ -6,16 +6,14 @@ const EM = @import("EntityManager.zig");
 const PM = @import("PoolManager.zig");
 const SM = @import("SystemManager.zig");
 const PI = @import("PoolInterface.zig");
-const SDG = @import("SystemDependencyGraph.zig");
 const factoryTypes = @import("../registries/FactoryRegistry.zig").factoryTypes;
 const Query = @import("Query.zig").QueryType;
 const QueryConfig = @import("QueryTypes.zig").QueryConfig;
 const Global = @import("../Global.zig").Global;
 const PoolInterface = PI.PoolInterfaceType;
 
-/// Automatically sorted system sequence based on component dependencies
-/// Uses all systems from SystemRegistry and sorts them by read/write dependencies
-pub const system_sequence = SDG.sortSystems(std.meta.tags(SR.SystemName));
+/// All registered systems (sorted at runtime during init)
+const all_systems = std.meta.tags(SR.SystemName);
 
 pub const Prescient = struct {
     pub const Entity = EM.Entity;
@@ -49,7 +47,7 @@ pub const Prescient = struct {
     _allocator: std.mem.Allocator,
     _entity_manager: EM.EntityManager,
     _pool_manager: *PM.PoolManager,
-    _system_manager: SM.SystemManager(&system_sequence),
+    _system_manager: SM.SystemManager(all_systems),
     ent: Ent = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !*Self {
@@ -58,7 +56,7 @@ pub const Prescient = struct {
         pool_manager.* = PM.PoolManager.init(allocator);
 
         const entity_manager = try EM.EntityManager.init(allocator);
-        const system_manager = try SM.SystemManager(&system_sequence).init(allocator, pool_manager);
+        const system_manager = try SM.SystemManager(all_systems).init(allocator, pool_manager);
 
         const self = try allocator.create(Self);
         self.* = .{

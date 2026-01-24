@@ -57,6 +57,10 @@ pub fn main() !void {
         \\    // Optional: resolve write-write conflicts with other systems
         \\    // pub const runs_before = &[_]SR.SystemName{{ .OtherSystem }};
         \\
+        \\    // Optional: declare indirect component access (through entity references)
+        \\    // pub const indirect_reads = &.{{}};
+        \\    // pub const indirect_writes = &.{{}};
+        \\
         \\    allocator: std.mem.Allocator,
         \\    active: bool = true,
         \\    queries: struct {{

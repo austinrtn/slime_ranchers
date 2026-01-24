@@ -7,6 +7,7 @@ const raylib = @import("raylib");
 
 pub const ChangeAnim = struct {
     const Self = @This();
+    pub const enabled: bool = true;
     pub const runs_before = &.{ .Animate, .Collision };
 
     allocator: std.mem.Allocator,

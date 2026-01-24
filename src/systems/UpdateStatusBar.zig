@@ -6,6 +6,7 @@ const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 
 pub const UpdateStatusBar = struct {
     const Self = @This();
+    pub const enabled: bool = true;
 
     // Dependency declarations for compile-time system ordering
     pub const reads = [_]type{};

@@ -88,7 +88,8 @@ fn buildRegistry(
 
     print("Scanning {s} directory: {s}\n", .{ varName, directoryPath });
 
-    const filesFound = getFileData(allocator, &fileStorage, directoryPath) catch |err| {
+    const is_system_registry = std.mem.eql(u8, varName, "System");
+    const filesFound = getFileData(allocator, &fileStorage, directoryPath, is_system_registry) catch |err| {
         if (err == error.FileNotFound) {
             print("  Directory does not exist. Creating empty registry.\n", .{});
             try writeEmptyRegistry(allocator, &fileStorage, varName);
@@ -122,7 +123,7 @@ fn buildRegistry(
     print("  Generated: {s}\n", .{registryPath});
 }
 
-fn getFileData(allocator: std.mem.Allocator, fs: *FileStorage, directory: []const u8) !bool {
+fn getFileData(allocator: std.mem.Allocator, fs: *FileStorage, directory: []const u8, is_system_registry: bool) !bool {
     var dir = std.fs.cwd().openDir(directory, .{ .iterate = true }) catch |err| {
         if (err == error.FileNotFound) return err;
         return err;
@@ -143,6 +144,19 @@ fn getFileData(allocator: std.mem.Allocator, fs: *FileStorage, directory: []cons
                 print("  Warning: No type definition found in {s}, skipping.\n", .{entry.name});
                 continue;
             };
+
+            // Check enabled field (required for systems)
+            if (is_system_registry) {
+                const enabled = parseEnabledField(content) orelse {
+                    print("  ERROR: System {s} missing required 'pub const enabled: bool' field!\n", .{typeName});
+                    return error.MissingEnabledField;
+                };
+
+                if (!enabled) {
+                    print("  Skipping {s} (enabled = false)\n", .{typeName});
+                    continue;
+                }
+            }
 
             const fileData = FileData{
                 .typeName = try allocator.dupe(u8, typeName),
@@ -226,6 +240,50 @@ fn isTypeName(token: []const u8) bool {
     }
 
     return false;
+}
+
+/// Parses the 'enabled' field from a system file.
+/// Returns true/false based on the value, or null if not found.
+fn parseEnabledField(content: []const u8) ?bool {
+    var lines = std.mem.splitAny(u8, content, "\n");
+
+    while (lines.next()) |line| {
+        // Look for "pub const enabled" pattern
+        var tokens = std.mem.tokenizeAny(u8, line, " \t\r\n");
+
+        var token_index: usize = 0;
+        var found_pub = false;
+        var found_const = false;
+        var found_enabled = false;
+        var found_equals = false;
+
+        while (tokens.next()) |token| {
+            if (token_index == 0 and std.mem.eql(u8, token, "pub")) {
+                found_pub = true;
+            } else if (token_index == 1 and found_pub and std.mem.eql(u8, token, "const")) {
+                found_const = true;
+            } else if (token_index == 2 and found_const and std.mem.eql(u8, token, "enabled")) {
+                found_enabled = true;
+            } else if (token_index == 2 and found_const and std.mem.eql(u8, token, "enabled:")) {
+                // Handle "pub const enabled: bool = true;" format
+                found_enabled = true;
+                token_index += 1; // Skip the type check
+            } else if (found_enabled and std.mem.eql(u8, token, "bool")) {
+                // Skip type annotation
+            } else if (found_enabled and std.mem.eql(u8, token, "=")) {
+                found_equals = true;
+            } else if (found_enabled and found_equals) {
+                // Check for true/false value
+                if (std.mem.eql(u8, token, "true") or std.mem.eql(u8, token, "true;")) {
+                    return true;
+                } else if (std.mem.eql(u8, token, "false") or std.mem.eql(u8, token, "false;")) {
+                    return false;
+                }
+            }
+            token_index += 1;
+        }
+    }
+    return null;
 }
 
 fn writeEmptyRegistry(allocator: std.mem.Allocator, fs: *FileStorage, varName: []const u8) !void {
@@ -340,7 +398,7 @@ fn buildPoolRegistry(allocator: std.mem.Allocator, project_dir: []const u8) !voi
 
     print("Scanning Pool directory: {s}\n", .{poolsDir});
 
-    const filesFound = getFileData(allocator, &fileStorage, poolsDir) catch |err| {
+    const filesFound = getFileData(allocator, &fileStorage, poolsDir, false) catch |err| {
         if (err == error.FileNotFound) {
             print("  Directory does not exist. Creating empty PoolRegistry.\n", .{});
             try writeEmptyPoolRegistry(allocator, &fileStorage);
@@ -486,7 +544,7 @@ fn buildFactoryRegistry(allocator: std.mem.Allocator, project_dir: []const u8) !
 
     print("Scanning Factory directory: {s}\n", .{factoriesDir});
 
-    const filesFound = getFileData(allocator, &fileStorage, factoriesDir) catch |err| {
+    const filesFound = getFileData(allocator, &fileStorage, factoriesDir, false) catch |err| {
         if (err == error.FileNotFound) {
             print("  Directory does not exist. Creating empty FactoryRegistry.\n", .{});
             try writeEmptyFactoryRegistry(allocator, &fileStorage);

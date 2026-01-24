@@ -1,5 +1,6 @@
 const std = @import("std");
 
+pub const AIManager = @import("../systems/AIManager.zig").AIManager;
 pub const Animate = @import("../systems/Animate.zig").Animate;
 pub const Attack = @import("../systems/Attack.zig").Attack;
 pub const ChangeAnim = @import("../systems/ChangeAnim.zig").ChangeAnim;
@@ -13,6 +14,7 @@ pub const UpdateStatusBar = @import("../systems/UpdateStatusBar.zig").UpdateStat
 pub const WaveManager = @import("../systems/WaveManager.zig").WaveManager;
 
 pub const SystemTypeMap = struct {
+    pub const AIManager = @import("../systems/AIManager.zig").AIManager;
     pub const Animate = @import("../systems/Animate.zig").Animate;
     pub const Attack = @import("../systems/Attack.zig").Attack;
     pub const ChangeAnim = @import("../systems/ChangeAnim.zig").ChangeAnim;
@@ -27,6 +29,7 @@ pub const SystemTypeMap = struct {
 };
 
 pub const SystemName = enum {
+    AIManager,
     Animate,
     Attack,
     ChangeAnim,
@@ -41,6 +44,7 @@ pub const SystemName = enum {
 };
 
 pub const SystemTypes = [_]type {
+    AIManager,
     Animate,
     Attack,
     ChangeAnim,

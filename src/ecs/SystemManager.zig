@@ -1,11 +1,12 @@
 const std = @import("std");
 const SR = @import("../registries/SystemRegistry.zig");
 const PM = @import("PoolManager.zig");
+const SDG = @import("SystemDependencyGraph.zig");
 
 fn SystemManagerStorage(comptime systems: []const SR.SystemName) type {
-    var fields:[systems.len]std.builtin.Type.StructField = undefined;
+    var fields: [systems.len]std.builtin.Type.StructField = undefined;
 
-    for(systems, 0..) |system, i| {
+    for (systems, 0..) |system, i| {
         const name = @tagName(system);
         const T = SR.getTypeByName(system);
 
@@ -25,16 +26,55 @@ fn SystemManagerStorage(comptime systems: []const SR.SystemName) type {
             .decls = &.{},
             .is_tuple = false,
             .layout = .auto,
-        }
+        },
     });
 }
 
 pub fn SystemManager(comptime systems: []const SR.SystemName) type {
+    const n = systems.len;
+
+    // Build metadata at comptime (O(n) - no deeply nested loops)
+    const metadata = SDG.buildSystemMetadata(systems);
+
+    // Detect write-write conflicts at comptime (keeps compile-time errors)
+    SDG.detectWriteWriteConflicts(systems, &metadata);
+
     return struct {
         const Self = @This();
+
+        // Type alias for update function pointers
+        const UpdateFn = *const fn (*Self) anyerror!void;
+
+        // Comptime: array of update functions indexed by original system order
+        const update_fns_by_index: [n]UpdateFn = blk: {
+            var fns: [n]UpdateFn = undefined;
+            for (systems, 0..) |sys, i| {
+                fns[i] = makeUpdateFn(sys);
+            }
+            break :blk fns;
+        };
+
+        // Generate an update function for a specific system at comptime
+        fn makeUpdateFn(comptime system: SR.SystemName) UpdateFn {
+            return struct {
+                fn doUpdate(self: *Self) !void {
+                    var sys = &@field(self.storage, @tagName(system));
+                    // Check if system should run (active field or no active field = always run)
+                    const should_run = if (@hasField(@TypeOf(sys.*), "active")) sys.active else true;
+                    if (should_run) {
+                        try self.updateSystemQueries(sys);
+                        try sys.update();
+                    }
+                }
+            }.doUpdate;
+        }
+
         allocator: std.mem.Allocator,
         storage: SystemManagerStorage(systems),
         pool_manager: *PM.PoolManager,
+        // Runtime: sorted indices and update function pointers
+        sorted_indices: [n]usize,
+        update_fns_sorted: [n]UpdateFn,
 
         pub fn init(allocator: std.mem.Allocator, pool_manager: *PM.PoolManager) !Self {
             var self: Self = undefined;
@@ -42,7 +82,7 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
             self.pool_manager = pool_manager;
             var storage: SystemManagerStorage(systems) = undefined;
 
-            inline for(systems, 0..) |_, i| {
+            inline for (systems, 0..) |_, i| {
                 const SystemType = SR.getTypeByName(systems[i]);
                 var sys_instance: SystemType = .{
                     .allocator = undefined,
@@ -51,12 +91,9 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
 
                 // Set allocator (struct initialization applies defaults for other fields)
                 sys_instance.allocator = allocator;
-                if (@hasField(SystemType, "active")) {
-                    sys_instance.active = true;
-                }
 
                 // Initialize all queries via reflection
-                inline for(std.meta.fields(@TypeOf(sys_instance.queries))) |field| {
+                inline for (std.meta.fields(@TypeOf(sys_instance.queries))) |field| {
                     @field(sys_instance.queries, field.name) = try field.type.init(allocator, pool_manager);
                 }
 
@@ -64,11 +101,19 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
             }
             self.storage = storage;
 
+            // Runtime: sort systems by dependencies
+            try SDG.sortSystemsRuntime(n, &metadata, &self.sorted_indices);
+
+            // Build sorted function pointer array
+            for (self.sorted_indices, 0..) |idx, i| {
+                self.update_fns_sorted[i] = update_fns_by_index[idx];
+            }
+
             return self;
         }
 
         pub fn initializeSystems(self: *Self) !void {
-            inline for(systems) |system| {
+            inline for (systems) |system| {
                 const SystemType = @TypeOf(@field(self.storage, @tagName(system)));
                 if (std.meta.hasFn(SystemType, "init")) {
                     var sys = &@field(self.storage, @tagName(system));
@@ -78,9 +123,9 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
         }
 
         pub fn deinit(self: *Self) void {
-            inline for(systems) |system| {
+            inline for (systems) |system| {
                 var system_instance = &@field(self.storage, @tagName(system));
-                inline for(std.meta.fields(@TypeOf(system_instance.queries))) |query_field| {
+                inline for (std.meta.fields(@TypeOf(system_instance.queries))) |query_field| {
                     @field(system_instance.queries, query_field.name).deinit();
                 }
             }
@@ -95,9 +140,10 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
                 }
             }
         }
+
         fn updateSystemQueries(self: *Self, system: anytype) !void {
             _ = self;
-            inline for(std.meta.fields(@TypeOf(system.queries))) |query_field| {
+            inline for (std.meta.fields(@TypeOf(system.queries))) |query_field| {
                 try @field(system.queries, query_field.name).update();
             }
         }
@@ -108,14 +154,9 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
         }
 
         pub fn update(self: *Self) !void {
-            inline for(systems) |system| {
-                var sys = &@field(self.storage, @tagName(system));
-                // Check if system should run (active field or no active field = always run)
-                const should_run = if (@hasField(@TypeOf(sys.*), "active")) sys.active else true;
-                if (should_run) {
-                    try self.updateSystemQueries(sys);
-                    try sys.update();
-                }
+            // Use runtime-sorted function pointers
+            for (self.update_fns_sorted) |update_fn| {
+                try update_fn(self);
             }
         }
     };

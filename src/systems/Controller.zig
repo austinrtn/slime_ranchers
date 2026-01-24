@@ -7,6 +7,7 @@ const raylib = @import("raylib");
 
 pub const Controller = struct {
     const Self = @This();
+    pub const enabled: bool = true;
     pub const runs_before = &.{.Animate, .Attack, .ChangeAnim, .EnergyManager, .Track, .WaveManager};
 
     allocator: std.mem.Allocator,

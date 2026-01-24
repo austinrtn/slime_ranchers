@@ -9,6 +9,7 @@ const comp_name = Prescient.Components.Names;
 
 pub const Collision = struct {
     const Self = @This();
+    pub const enabled: bool = true;
 
     const CollisionEntity = struct {
         id: Prescient.Entity,
@@ -67,15 +68,17 @@ pub const Collision = struct {
 
         try self.queries.waves.forEach(self, struct{
             pub fn run(data: anytype, c: anytype) !bool {
-                const ent = c.entity;
+                const wave = c.entity;
                 const pos = c.Position;
                 const sprite = c.Sprite;
                 const bbox = c.BoundingBox;
 
                 if (!bbox.active) return true;
 
-                const slime_ref = try data.prescient.ent.getEntityComponentData(ent, .SlimeRef);
-                const col_ent = try getCollisionEntity(ent, pos, bbox, sprite, false, slime_ref.*, .Wave);
+                const slime_ref = data.prescient.ent.getEntityComponentData(wave, .SlimeRef) catch {
+                    return true;
+                };
+                const col_ent = try getCollisionEntity(wave, pos, bbox, sprite, false, slime_ref.*, .Wave);
 
                 try data.entities.append(data.allocator, col_ent);
                 return true;
@@ -92,9 +95,8 @@ pub const Collision = struct {
                     entity_a.y + entity_a.height > entity_b.y;
 
                 if (colliding) {
-                    if(entity_b.tag == .Wave and entity_a.tag == .Slime and entity_b.ent_ref.?.index != entity_a.id.index) {
-                        std.debug.print("wave id: {} | slime id: {}", .{entity_b.ent_ref.?.index, entity_a.id.index});
-                        //try self.prescient.ent.destroy(entity_a.id);
+                    if((entity_b.tag == .Wave and entity_a.tag == .Slime) and (entity_b.ent_ref.?.index != entity_a.id.index)) {
+                        try self.prescient.ent.destroy(entity_a.id);
                     }
                     // Collision detected - handle collision response here
                     // std.debug.print("Collision between {} and {}\n", .{ entity_a.id, entity_b.id });

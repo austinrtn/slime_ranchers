@@ -7,6 +7,7 @@ const raylib = @import("raylib");
 
 pub const Attack = struct {
     const Self = @This();
+    pub const enabled: bool = true;
     // Removed runs_before - EnergyManager writes Slime which Attack reads,
     // so EnergyManager should run first (component dependency handles this)
 

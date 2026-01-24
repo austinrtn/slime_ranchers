@@ -7,6 +7,7 @@ const raylib = @import("raylib");
 
 pub const Render = struct {
     const Self = @This();
+    pub const enabled: bool = true;
 
     // Dependency declarations for compile-time system ordering
     pub const reads = [_]type{};

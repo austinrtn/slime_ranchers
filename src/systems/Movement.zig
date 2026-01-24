@@ -7,6 +7,7 @@ const raylib = @import("raylib");
 
 pub const Movement = struct {
     const Self = @This();
+    pub const enabled: bool = true;
     pub const runs_before = &.{.WaveManager};
 
     allocator: std.mem.Allocator,

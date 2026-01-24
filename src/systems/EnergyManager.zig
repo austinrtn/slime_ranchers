@@ -7,6 +7,7 @@ const raylib = @import("raylib");
 
 pub const EnergyManager = struct {
     const Self = @This();
+    pub const enabled: bool = true;
     pub const runs_before = &.{.ChangeAnim};
 
     allocator: std.mem.Allocator,

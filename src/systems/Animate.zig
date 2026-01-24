@@ -6,6 +6,7 @@ const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 
 pub const Animate = struct {
     const Self = @This();
+    pub const enabled: bool = true;
 
     allocator: std.mem.Allocator,
     active: bool = true,

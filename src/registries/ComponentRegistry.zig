@@ -1,5 +1,6 @@
 const std = @import("std");
 
+pub const AI = @import("../components/AI.zig").AI;
 pub const Attack = @import("../components/Attack.zig").Attack;
 pub const BoundingBox = @import("../components/BoundingBox.zig").BoundingBox;
 pub const Circle = @import("../components/Circle.zig").Circle;
@@ -19,6 +20,7 @@ pub const Velocity = @import("../components/Velocity.zig").Velocity;
 pub const Wave = @import("../components/Wave.zig").Wave;
 
 pub const CompTypeMap = struct {
+    pub const AI = @import("../components/AI.zig").AI;
     pub const Attack = @import("../components/Attack.zig").Attack;
     pub const BoundingBox = @import("../components/BoundingBox.zig").BoundingBox;
     pub const Circle = @import("../components/Circle.zig").Circle;
@@ -39,6 +41,7 @@ pub const CompTypeMap = struct {
 };
 
 pub const ComponentName = enum {
+    AI,
     Attack,
     BoundingBox,
     Circle,
@@ -59,6 +62,7 @@ pub const ComponentName = enum {
 };
 
 pub const ComponentTypes = [_]type {
+    AI,
     Attack,
     BoundingBox,
     Circle,
