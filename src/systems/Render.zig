@@ -9,10 +9,6 @@ pub const Render = struct {
     const Self = @This();
     pub const enabled: bool = true;
 
-    // Dependency declarations for compile-time system ordering
-    pub const reads = [_]type{};
-    pub const writes = [_]type{};
-
     allocator: std.mem.Allocator,
     active: bool = true,
     width: i32 = 800,

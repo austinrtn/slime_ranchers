@@ -21,7 +21,8 @@ pub const Slime = struct {
     },
 
     slime_type:  comps.Slime.SlimeType = comps.Slime.SlimeType.slime2,
-    speed: f32 = 60,
+    speed: f32 = 80,
+    enemy_speed: f32 = 50,
 
     sprite_width: f32 = 64,
     sprite_height: f32 = 64,
@@ -69,6 +70,7 @@ pub const Slime = struct {
         self: @This(),
         pos: comps.Position,
         slime_type: comps.Slime.SlimeType,
+        ent_ref: Prescient.Entity,
     ) !Prescient.Entity {
         const prescient = try Prescient.getPrescient(); 
         var pool = try prescient.getPool(.SlimePool);
@@ -89,9 +91,10 @@ pub const Slime = struct {
                 self.scale,
             ),
             .Attack = self.attack,
-            .Speed = self.speed,
+            .Speed = self.enemy_speed,
             .BoundingBox = .{ .width = 18, .height = 16 }, 
             .Health = self.health,
+            .AI = .{.ent_ref = ent_ref},
         });
     }
 };

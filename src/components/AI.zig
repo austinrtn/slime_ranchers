@@ -1,5 +1,4 @@
-const Prescient = @import("../ecs/Prescient.zig").Prescient;
-const Entity = Prescient.Entity;
+const Entity = @import("../ecs/EntityManager.zig").Entity;
 
 pub const AI = struct {
     pub const State = enum {

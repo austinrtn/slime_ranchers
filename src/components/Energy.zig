@@ -1,4 +1,3 @@
-const Prescient = @import("../ecs/Prescient.zig").Prescient;
 
 pub const Energy = struct {
     energy: f32,

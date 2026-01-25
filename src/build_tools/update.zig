@@ -15,6 +15,7 @@ const build_tool_files = [_][]const u8{
     "pool_generator.zig",
     "raylib_installer.zig",
     "factory_generator.zig",
+    "system_graph",
 };
 
 const source_files_dir = "src/ecs/";

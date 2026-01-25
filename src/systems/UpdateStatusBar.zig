@@ -3,6 +3,7 @@ const Prescient = @import("../ecs/Prescient.zig").Prescient;
 const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
+const Data = @import("../main.zig").getData;
 
 pub const UpdateStatusBar = struct {
     const Self = @This();
@@ -20,10 +21,16 @@ pub const UpdateStatusBar = struct {
 
     pub fn update(self: *Self) !void {
         const prescient = try Prescient.getPrescient();
+        const ctx = struct {
+            pub const prescient = prescient;
+            pub const data = getData();
+        };
 
-        try self.queries.status_bars.forEach(prescient, struct{
-            pub fn run(data: anytype, c: anytype) !bool {
+        try self.queries.status_bars.forEach(ctx, struct{
+            pub fn run(ctx: anytype, c: anytype) !bool {
                 const status_bar = c.StatusBar;
+                const prescient = data.prescient;
+                const c:w
                 var current_value: f32 = 0;
                 var max_value: f32 = 0;
 
@@ -35,6 +42,8 @@ pub const UpdateStatusBar = struct {
                     const health_comp = try data.ent.getEntityComponentData(status_bar.entity_link, .Health);
                     current_value = health_comp.health;
                     max_value = health_comp.max_health;
+                } else if(status_bar.status == .loading) {
+                    const m 
                 }
                 const percent = current_value / max_value;
                 status_bar.current_size.width = status_bar.max_size.width * percent;

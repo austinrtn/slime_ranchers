@@ -8,7 +8,7 @@ const raylib = @import("raylib");
 pub const Controller = struct {
     const Self = @This();
     pub const enabled: bool = true;
-    pub const runs_before = &.{.Animate, .Attack, .ChangeAnim, .EnergyManager, .Track, .WaveManager};
+    pub const runs_before = &.{.AIManager, .Animate, .Attack, .ChangeAnim, .EnergyManager, .WaveManager, };
 
     allocator: std.mem.Allocator,
     active: bool = true,

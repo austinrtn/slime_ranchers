@@ -156,6 +156,35 @@ pub fn build(b: *std.Build) void {
     factory_step.dependOn(&run_factory_gen.step);
 
     // =========================================================================
+    // System graph visualizer: zig build system-graph
+    // =========================================================================
+
+    // Create a module for the system metadata
+    const system_metadata_mod = b.addModule("SystemMetadata", .{
+        .root_source_file = b.path("src/registries/SystemMetadata.zig"),
+        .target = target,
+    });
+
+    const system_graph = b.addExecutable(.{
+        .name = "system-graph",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/build_tools/system_graph.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "SystemMetadata", .module = system_metadata_mod },
+            },
+        }),
+    });
+    // System graph needs registry to run first (to generate SystemMetadata.zig)
+    system_graph.step.dependOn(&run_registry.step);
+
+    const graph_step = b.step("system-graph", "Print system execution order and dependencies");
+    const run_graph = b.addRunArtifact(system_graph);
+    if (b.args) |args| run_graph.addArgs(args);
+    graph_step.dependOn(&run_graph.step);
+
+    // =========================================================================
     // Raylib installer: zig build raylib-install
     // =========================================================================
 

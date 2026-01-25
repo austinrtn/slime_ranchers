@@ -1,3 +1,3 @@
-const Prescient = @import("../ecs/Prescient.zig").Prescient;
+const Entity = @import("../ecs/EntityManager.zig").Entity;
 
-pub const SlimeRef = Prescient.Entity;
+pub const SlimeRef = Entity;

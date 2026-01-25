@@ -1,13 +1,15 @@
-const Prescient = @import("../ecs/Prescient.zig").Prescient;
+const Entity = @import("../ecs/EntityManager.zig").Entity;
+const Rectangle = @import("Rectangle.zig").Rectangle;
 
 pub const StatusBar = struct {
     pub const StatusType = enum {
         health,
-        energy
+        energy,
+        loading,
     };
     status_type: StatusType,
-    entity_link: Prescient.Entity,
+    entity_link: Entity,
 
-    current_size: Prescient.Components.Types.Rectangle,
-    max_size: Prescient.Components.Types.Rectangle,
+    current_size: Rectangle,
+    max_size: Rectangle,
 };

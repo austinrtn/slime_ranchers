@@ -8,11 +8,12 @@ const raylib = @import("raylib");
 pub const Movement = struct {
     const Self = @This();
     pub const enabled: bool = true;
-    pub const runs_before = &.{.WaveManager};
+    pub const runs_before = &.{};
 
     allocator: std.mem.Allocator,
     active: bool = true,
     frame_time: f32 = 0,
+
     queries: struct {
         objs: Query(.{.read = &.{.Velocity}, .write = &.{.Position}}),
     },

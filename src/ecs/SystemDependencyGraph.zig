@@ -196,9 +196,13 @@ pub fn detectWriteWriteConflicts(comptime systems: []const SR.SystemName, compti
 /// Sorts systems without queries first, then systems with queries in dependency order
 pub fn sortSystemsRuntime(
     comptime n: usize,
+    comptime systems: []const SR.SystemName,
     metadata: []const SystemMetadata(n),
     out_order: []usize,
 ) error{DependencyCycle}!void {
+    // Handle empty system list
+    if (n == 0) return;
+
     const DMask = DependencyMask(n);
 
     // First, collect systems without queries (they go first)
@@ -271,6 +275,83 @@ pub fn sortSystemsRuntime(
         }
 
         if (!found) {
+            // Collect systems still not placed (these are involved in the cycle)
+            std.debug.print("\n=== CIRCULAR DEPENDENCY DETECTED ===\n\n", .{});
+
+            // Try to trace a simple cycle path FIRST - this is the most important info
+            std.debug.print("CYCLE FOUND:\n", .{});
+            const start_idx = blk: {
+                for (0..with_query_count) |wi| {
+                    const idx = with_query_indices[wi];
+                    const bit: DMask = @as(DMask, 1) << @intCast(idx);
+                    if ((placed & bit) == 0) break :blk idx;
+                }
+                unreachable;
+            };
+
+            var visited: DMask = 0;
+            var current = start_idx;
+            var cycle_path: [n]usize = undefined;
+            var cycle_len: usize = 0;
+            cycle_path[cycle_len] = current;
+            cycle_len += 1;
+            visited = setBit(DMask, visited, current);
+
+            // Follow dependencies until we loop back
+            var steps: usize = 0;
+            while (steps < n) : (steps += 1) {
+                var next_found = false;
+                for (0..n) |dep_idx| {
+                    if (hasBit(DMask, dependencies[current], dep_idx)) {
+                        const dep_bit: DMask = @as(DMask, 1) << @intCast(dep_idx);
+                        const is_unplaced = (placed & dep_bit) == 0;
+
+                        if (dep_idx == start_idx) {
+                            // Complete the cycle
+                            cycle_path[cycle_len] = dep_idx;
+                            cycle_len += 1;
+                            next_found = false;
+                            break;
+                        }
+
+                        if (is_unplaced and !hasBit(DMask, visited, dep_idx)) {
+                            visited = setBit(DMask, visited, dep_idx);
+                            cycle_path[cycle_len] = dep_idx;
+                            cycle_len += 1;
+                            current = dep_idx;
+                            next_found = true;
+                            break;
+                        }
+                    }
+                }
+                if (!next_found) break;
+            }
+
+            // Print the cycle with explanations
+            for (0..cycle_len - 1) |i| {
+                const from = cycle_path[i];
+                const to = cycle_path[i + 1];
+
+                std.debug.print("  {s} must run AFTER {s}\n", .{ @tagName(systems[from]), @tagName(systems[to]) });
+
+                // Explain why
+                const is_explicit = hasBit(DMask, metadata[from].runs_after_mask, to);
+                if (is_explicit) {
+                    std.debug.print("    → Because {s} has 'pub const runs_after' including {s}\n", .{ @tagName(systems[from]), @tagName(systems[to]) });
+                } else {
+                    std.debug.print("    → Because {s} writes components that {s} reads\n", .{ @tagName(systems[to]), @tagName(systems[from]) });
+                }
+            }
+            std.debug.print("  ^^^ This creates a cycle! ^^^\n\n", .{});
+
+            std.debug.print("HOW TO FIX:\n", .{});
+            std.debug.print("  Remove one of the 'runs_after' declarations in the cycle, OR\n", .{});
+            std.debug.print("  Add 'pub const runs_before = &.{{.<SystemName>}};' to override\n", .{});
+            std.debug.print("  a component-based dependency.\n", .{});
+            std.debug.print("\n  Example: If AIManager has 'runs_after = &.{{.Controller}};',\n", .{});
+            std.debug.print("  remove Controller from that list to break the cycle.\n", .{});
+            std.debug.print("=====================================\n\n", .{});
+
             return error.DependencyCycle;
         }
     }

@@ -10,6 +10,7 @@ const comp_name = Prescient.Components.Names;
 pub const Collision = struct {
     const Self = @This();
     pub const enabled: bool = true;
+    pub const runs_before = &.{.ChangeAnim, .Animate};
 
     const CollisionEntity = struct {
         id: Prescient.Entity,

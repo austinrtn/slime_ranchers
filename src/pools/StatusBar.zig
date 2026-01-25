@@ -5,9 +5,6 @@ const ComponentName = CR.ComponentName;
 
 // Define which components this pool supports
 const pool_components = &[_]ComponentName{
-    // Add your components here, e.g.:
-    // .Position,
-    // .Velocity,
 };
 
 const req_components = &[_]ComponentName{

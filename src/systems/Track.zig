@@ -7,14 +7,14 @@ const Raylib = @import("raylib");
 
 pub const Track = struct {
     const Self = @This();
-    pub const enabled: bool = true;
+    pub const enabled: bool = false;
 
     // Track calculates velocity based on position, then Movement/WaveManager apply it
     // Override component deps: Track reads Position which Movement/WaveManager write
     pub const runs_before = &.{ .Movement, .WaveManager };
 
     allocator: std.mem.Allocator,
-    active: bool = false,
+    active: bool = true,
     speed: f32 = 150,
     queries: struct {
         objs: Query(.{.read = &.{.Position}, .write = &.{.Velocity}, .exclude = &.{.Controller,}}),

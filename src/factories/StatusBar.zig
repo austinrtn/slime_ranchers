@@ -28,6 +28,21 @@ pub const StatusBar = struct {
         }
     };
 
+    const width =  200;
+    const height = 50;
+
+    pub var LoadingBar = StatusBar {
+        .position = .{ . x = 400 - (width/2), .y = 400 - (height/2)}, 
+        .color = .red,
+        .max_size = .{.width = width, .height = height},
+        .status_bar = .{
+            .status_type = .loading,
+            .max_size = undefined,
+            .current_size = undefined,
+            .entity_link = undefined, 
+        },
+    };
+
     position: comps.Position, 
     color: comps.Color,
     max_size: comps.Rectangle,

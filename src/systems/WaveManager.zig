@@ -8,7 +8,7 @@ const raylib = @import("raylib");
 pub const WaveManager = struct {
     const Self = @This();
     pub const enabled: bool = true;
-    pub const runs_before = &.{.Animate, .ChangeAnim};
+    pub const runs_before = &.{.Movement, .Animate, .ChangeAnim, .Render};
 
     // Dependency declarations for compile-time system ordering
     pub const reads = [_]type{};

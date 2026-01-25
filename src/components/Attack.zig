@@ -1,5 +1,3 @@
-const Prescient = @import("../ecs/Prescient.zig").Prescient;
-
 pub const Attack = struct {
     damage: f32, // damange dealt to others
     timeout: f32, //Time needed to attack again

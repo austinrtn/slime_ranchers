@@ -58,10 +58,15 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
         fn makeUpdateFn(comptime system: SR.SystemName) UpdateFn {
             return struct {
                 fn doUpdate(self: *Self) !void {
+                    const SystemType = SR.getTypeByName(system);
+
+                    // Require 'active' field at compile time
+                    if (!@hasField(SystemType, "active")) {
+                        @compileError("System '" ++ @tagName(system) ++ "' missing required 'active: bool' field");
+                    }
+
                     var sys = &@field(self.storage, @tagName(system));
-                    // Check if system should run (active field or no active field = always run)
-                    const should_run = if (@hasField(@TypeOf(sys.*), "active")) sys.active else true;
-                    if (should_run) {
+                    if (sys.active) {
                         try self.updateSystemQueries(sys);
                         try sys.update();
                     }
@@ -102,7 +107,7 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
             self.storage = storage;
 
             // Runtime: sort systems by dependencies
-            try SDG.sortSystemsRuntime(n, &metadata, &self.sorted_indices);
+            try SDG.sortSystemsRuntime(n, systems, &metadata, &self.sorted_indices);
 
             // Build sorted function pointer array
             for (self.sorted_indices, 0..) |idx, i| {

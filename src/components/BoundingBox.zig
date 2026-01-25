@@ -1,5 +1,3 @@
-const Prescient = @import("../ecs/Prescient.zig").Prescient;
-
 pub const BoundingBox = struct {
     active: bool = true,
 

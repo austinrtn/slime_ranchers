@@ -8,6 +8,7 @@ const pool_components = &[_]ComponentName{
     .Attack,
     .Energy,
     .Controller,
+    .AI,
 };
 
 const req_components = &[_]ComponentName{
