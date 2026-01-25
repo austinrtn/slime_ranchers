@@ -33,7 +33,7 @@ pub const StatusBar = struct {
 
     pub var LoadingBar = StatusBar {
         .position = .{ . x = 400 - (width/2), .y = 400 - (height/2)}, 
-        .color = .red,
+        .color = .black,
         .max_size = .{.width = width, .height = height},
         .status_bar = .{
             .status_type = .loading,
