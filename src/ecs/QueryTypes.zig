@@ -232,6 +232,8 @@ fn findMatchingPools(comptime config: QueryConfig) [countMatchingPools(config)]P
             const component_bit = MaskManager.Comptime.componentToBit(component);
             const in_pool = MaskManager.maskContains(pool_type.pool_mask, component_bit);
 
+            @setEvalBranchQuota(3000);
+
             if(!in_pool) {
                 query_match = false;
                 req_match = false;

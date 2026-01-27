@@ -63,6 +63,20 @@ pub fn QueryType(comptime config: QT.QueryConfig) type {
             self.updated = true;
         }
 
+        /// Clears all cached archetypes and re-caches from all pools
+        /// Used when a system is reactivated to ensure it sees all existing entities
+        pub fn refresh(self: *Self) !void {
+            // Clear existing caches
+            inline for(std.meta.fields(QResultType)) |field| {
+                var pool_element = &@field(self.query_storage, field.name);
+                pool_element.archetype_indices.clearRetainingCapacity();
+                pool_element.sparse_cache.clearRetainingCapacity();
+            }
+
+            // Re-cache all archetypes
+            try self.cacheArchetypesFromPools(true);
+        }
+
         fn cacheArchetypesFromPools(self: *Self, cache_all: bool) !void {
             inline for(std.meta.fields(QResultType)) |field| {
                 const pool_element = &@field(self.query_storage, field.name);

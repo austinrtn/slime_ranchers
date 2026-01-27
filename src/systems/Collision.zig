@@ -57,8 +57,10 @@ pub const Collision = struct {
                 const slime = c.Slime;
 
                 if (!bbox.active) return true;
+                
+                const player_id = data.prescient.getGlobalCtx().player_id;
+                const has_controller = data.prescient.ent.isEql(player_id, ent);
 
-                const has_controller = try data.prescient.ent.hasComponent(ent, .Controller);
                 var col_ent = try getCollisionEntity(ent, pos, bbox, sprite, has_controller, null, .Slime);
                 col_ent.state = slime.state;
 
@@ -76,9 +78,10 @@ pub const Collision = struct {
 
                 if (!bbox.active) return true;
 
-                const slime_ref = data.prescient.ent.getEntityComponentData(wave, .SlimeRef) catch {
+                const slime_ref = data.prescient.ent.getComponent(wave, .SlimeRef) catch {
                     return true;
                 };
+
                 const col_ent = try getCollisionEntity(wave, pos, bbox, sprite, false, slime_ref.*, .Wave);
 
                 try data.entities.append(data.allocator, col_ent);
@@ -87,6 +90,8 @@ pub const Collision = struct {
         });
 
         // Check for collisions between all pairs of entities
+        const player = self.prescient.getGlobalCtx().player_id;
+
         for (entities.items, 0..) |entity_a, i| {
             for (entities.items[i + 1 ..]) |entity_b| {
                 // AABB collision detection
@@ -96,8 +101,24 @@ pub const Collision = struct {
                     entity_a.y + entity_a.height > entity_b.y;
 
                 if (colliding) {
-                    if((entity_b.tag == .Wave and entity_a.tag == .Slime) and (entity_b.ent_ref.?.index != entity_a.id.index)) {
-                        try self.prescient.ent.destroy(entity_a.id);
+                    if(self.prescient.ent.isEql(entity_a.id, player) and entity_b.tag == .Slime or 
+                        (self.prescient.ent.isEql(entity_b.id, player) and entity_a.tag == .Slime)) {
+                            const health: *Prescient.Components.Types.Health = try self.prescient.ent.getComponent(player, .Health);
+                            if(!health.queue_damage) health.queue_damage = true;
+                        }
+                        
+                    if ((entity_b.tag == .Wave and entity_a.tag == .Slime and entity_b.ent_ref.?.index != entity_a.id.index) or
+                        (entity_a.tag == .Wave and entity_b.tag == .Slime and entity_a.ent_ref.?.index != entity_b.id.index)) {
+
+                        const slime_id = if (entity_a.tag == .Slime) entity_a.id else entity_b.id;
+                        const slime = try self.prescient.ent.getComponent(slime_id, .Slime);
+
+                        if(slime.is_alive) {
+                            slime.is_alive = false;
+                            try self.prescient.ent.destroy(slime_id);
+                            const ctx = self.prescient.getGlobalCtx();
+                            ctx.dead_slimes += 1;
+                        }
                     }
                     // Collision detected - handle collision response here
                     // std.debug.print("Collision between {} and {}\n", .{ entity_a.id, entity_b.id });

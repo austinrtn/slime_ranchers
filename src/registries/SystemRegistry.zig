@@ -7,6 +7,7 @@ pub const ChangeAnim = @import("../systems/ChangeAnim.zig").ChangeAnim;
 pub const Collision = @import("../systems/Collision.zig").Collision;
 pub const Controller = @import("../systems/Controller.zig").Controller;
 pub const EnergyManager = @import("../systems/EnergyManager.zig").EnergyManager;
+pub const HealthManager = @import("../systems/HealthManager.zig").HealthManager;
 pub const Movement = @import("../systems/Movement.zig").Movement;
 pub const Render = @import("../systems/Render.zig").Render;
 pub const UpdateStatusBar = @import("../systems/UpdateStatusBar.zig").UpdateStatusBar;
@@ -20,6 +21,7 @@ pub const SystemTypeMap = struct {
     pub const Collision = @import("../systems/Collision.zig").Collision;
     pub const Controller = @import("../systems/Controller.zig").Controller;
     pub const EnergyManager = @import("../systems/EnergyManager.zig").EnergyManager;
+    pub const HealthManager = @import("../systems/HealthManager.zig").HealthManager;
     pub const Movement = @import("../systems/Movement.zig").Movement;
     pub const Render = @import("../systems/Render.zig").Render;
     pub const UpdateStatusBar = @import("../systems/UpdateStatusBar.zig").UpdateStatusBar;
@@ -34,6 +36,7 @@ pub const SystemName = enum {
     Collision,
     Controller,
     EnergyManager,
+    HealthManager,
     Movement,
     Render,
     UpdateStatusBar,
@@ -48,6 +51,7 @@ pub const SystemTypes = [_]type {
     Collision,
     Controller,
     EnergyManager,
+    HealthManager,
     Movement,
     Render,
     UpdateStatusBar,

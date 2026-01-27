@@ -44,8 +44,7 @@ pub fn main() !void {
 
     // Generate component template
     const template = try std.fmt.allocPrint(allocator,
-        \\// Import only what you need to avoid circular dependencies
-        \\// const Entity = @import("../ecs/EntityManager.zig").Entity;
+        \\const Entity = @import("../ecs/EntityManager.zig").Entity;
         \\
         \\pub const {s} = struct {{
         \\    // Add your fields here

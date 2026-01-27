@@ -32,8 +32,8 @@ pub const WaveManager = struct {
                 const sprite = c.Sprite;
                 const wave = c.Wave;
 
-                const slime = try data.ent.getEntityComponentData(ref.*, .Slime);
-                const slime_pos = try data.ent.getEntityComponentData(ref.*, .Position);
+                const slime = try data.ent.getComponent(ref.*, .Slime);
+                const slime_pos = try data.ent.getComponent(ref.*, .Position);
 
                 pos.* = slime_pos.*;
 

@@ -36,3 +36,7 @@ pub const Movement = struct {
         self.frame_time = raylib.getFrameTime();
     }
 };
+// benchmark test
+// benchmark test
+// benchmark test
+// benchmark test

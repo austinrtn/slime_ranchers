@@ -9,7 +9,7 @@ const PI = @import("PoolInterface.zig");
 const factoryTypes = @import("../registries/FactoryRegistry.zig").factoryTypes;
 const Query = @import("Query.zig").QueryType;
 const QueryConfig = @import("QueryTypes.zig").QueryConfig;
-const Global = @import("../Global.zig").Global;
+const GlobalCtx = @import("../main.zig").GlobalCtx;
 const PoolInterface = PI.PoolInterfaceType;
 
 /// All registered systems (sorted at runtime during init)
@@ -17,7 +17,6 @@ const all_systems = std.meta.tags(SR.SystemName);
 
 pub const Prescient = struct {
     pub const Entity = EM.Entity;
-    pub const GlobalData = Global;
     pub const Factories = factoryTypes;
 
     pub const Components = struct {
@@ -44,6 +43,7 @@ pub const Prescient = struct {
         return _Prescient;
     }
 
+    _global_ctx: *GlobalCtx,
     _allocator: std.mem.Allocator,
     _entity_manager: EM.EntityManager,
     _pool_manager: *PM.PoolManager,
@@ -57,6 +57,8 @@ pub const Prescient = struct {
 
         const entity_manager = try EM.EntityManager.init(allocator);
         const system_manager = try SM.SystemManager(all_systems).init(allocator, pool_manager);
+        const global_ctx = try allocator.create(GlobalCtx);
+        global_ctx.* = try GlobalCtx.init();
 
         const self = try allocator.create(Self);
         self.* = .{
@@ -64,6 +66,7 @@ pub const Prescient = struct {
             ._entity_manager = entity_manager,
             ._pool_manager = pool_manager,
             ._system_manager = system_manager,
+            ._global_ctx = global_ctx,
         };
         self.ent = Ent.init(allocator, &self._entity_manager, pool_manager);
 
@@ -82,6 +85,7 @@ pub const Prescient = struct {
         self._entity_manager.deinit();
         self._pool_manager.deinit();
         allocator.destroy(self._pool_manager);
+        allocator.destroy(self._global_ctx);
         allocator.destroy(self);
     }
 
@@ -101,12 +105,16 @@ pub const Prescient = struct {
         return PoolInterface(pool_name).init(pool, &self._entity_manager);
     }
 
+    pub fn getGlobalCtx(self: *Self) *GlobalCtx {
+        return self._global_ctx;
+    }
+
     pub fn getSystem(self: *Self, comptime system: SR.SystemName) *SR.getTypeByName(system) {
         return self._system_manager.getSystem(system);
     }
 
-    pub fn setSystemActive(self: *Self, comptime system: SR.SystemName, active: bool) void {
-        self._system_manager.setSystemActive(system, active);
+    pub fn setSystemActive(self: *Self, comptime system: SR.SystemName, active: bool) !void {
+        try self._system_manager.setSystemActive(system, active);
     }
 
     pub fn isSystemActive(self: *Self, comptime system: SR.SystemName) bool {
@@ -142,6 +150,10 @@ pub const Ent = struct {
 
         return self;
     }
+
+        pub fn isEql(_: *Self, ent1: EM.Entity, ent2: EM.Entity) bool {
+            return EM.isEntEql(ent1, ent2);
+        }
 
         pub fn add(self: *Self, entity: EM.Entity, comptime component: CR.ComponentName, data: CR.getTypeByName(component)) !void {
             return self.handleFunctionCall(entity, data, struct {
@@ -201,7 +213,7 @@ pub const Ent = struct {
             unreachable;
         }
 
-        pub fn getEntityComponentData(self: *Self, entity: EM.Entity, comptime component: CR.ComponentName) !*CR.getTypeByName(component) {
+        pub fn getComponent(self: *Self, entity: EM.Entity, comptime component: CR.ComponentName) !*CR.getTypeByName(component) {
             const slot = try self._entity_manager.getSlot(entity);
 
             inline for (std.meta.fields(PR.PoolName)) |field| {

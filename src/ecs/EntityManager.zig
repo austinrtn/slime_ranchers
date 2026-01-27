@@ -14,6 +14,12 @@ pub const Entity = struct {
     generation: u32,
 };
 
+pub fn isEntEql(ent1: Entity, ent2: Entity) bool {
+    return (
+        ent1.index == ent2.index and ent1.generation == ent2.generation
+    );
+}
+
 pub const EntitySlot = struct {
     index: u32,
     generation: u32 = 0,

@@ -53,7 +53,7 @@ pub fn main() !void {
         \\
         \\pub const {s} = struct {{
         \\    const Self = @This();
-        \\
+        \\    pub const enabled = true;
         \\    // Optional: resolve write-write conflicts with other systems
         \\    // pub const runs_before = &[_]SR.SystemName{{ .OtherSystem }};
         \\

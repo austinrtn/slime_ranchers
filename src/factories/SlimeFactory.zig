@@ -6,7 +6,7 @@ const comps = Prescient.Components.Types;
 pub const Slime = struct {
     //defaults
     velocity: comps.Velocity = .{.dx = 0, .dy = 0},
-    health: comps.Health = .{.health = 50, .max_health = 100},
+    health: comps.Health = .{.health = 100, .max_health = 100},
     energy: comps.Energy = .{
         .energy = 100, 
         .max_energy = 100, 
@@ -93,7 +93,6 @@ pub const Slime = struct {
             .Attack = self.attack,
             .Speed = self.enemy_speed,
             .BoundingBox = .{ .width = 18, .height = 16 }, 
-            .Health = self.health,
             .AI = .{.ent_ref = ent_ref},
         });
     }

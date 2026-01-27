@@ -37,7 +37,7 @@ pub const AIManager = struct {
 
                 if(ai.state == .TARGETING_ENTITY) {
                     const pos_vect = raylib.Vector2{.x = pos.x, .y = pos.y};
-                    const target_pos = try ctx.prescient.ent.getEntityComponentData(ai.ent_ref, .Position);
+                    const target_pos = try ctx.prescient.ent.getComponent(ai.ent_ref, .Position);
                     const target_vect= raylib.Vector2{.x = target_pos.x, .y = target_pos.y};
                     const dist = raylib.Vector2.subtract(target_vect, pos_vect);
                     const length = raylib.Vector2.length(dist);

@@ -68,6 +68,14 @@ pub const all_metadata: []const SystemMetadata = &.{
         .has_queries = true,
     },
     .{
+        .name = "HealthManager",
+        .reads = &.{"Controller"},
+        .writes = &.{"Health"},
+        .runs_before = &.{"OtherSystem"},
+        .runs_after = &.{},
+        .has_queries = true,
+    },
+    .{
         .name = "Movement",
         .reads = &.{"Velocity"},
         .writes = &.{"Position"},
@@ -77,7 +85,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "Render",
-        .reads = &.{"Position", "Texture", "Sprite", "Rectangle", "Color", "Circle", "StatusBar", "BoundingBox"},
+        .reads = &.{"Position", "Text", "Color", "Texture", "Sprite", "Rectangle", "Circle", "StatusBar", "BoundingBox"},
         .writes = &.{},
         .runs_before = &.{},
         .runs_after = &.{},
@@ -102,4 +110,4 @@ pub const all_metadata: []const SystemMetadata = &.{
 };
 
 /// Pre-computed execution order based on dependencies
-pub const execution_order: []const usize = &.{5, 9, 6, 10, 0, 7, 4, 3, 1, 2, 8};
+pub const execution_order: []const usize = &.{5, 7, 10, 6, 11, 0, 8, 4, 3, 1, 2, 9};

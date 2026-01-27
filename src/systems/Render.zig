@@ -19,6 +19,7 @@ pub const Render = struct {
     render_bounding_boxes: bool = false,
 
     queries: struct {
+        text: Query(.{.read = &.{.Position, .Text, .Color}, .write = &.{}}),
         textures: Query(.{.read = &.{.Position, .Texture}, .write = &.{}}),
         sprites: Query(.{.read = &.{.Position, .Texture, .Sprite}, .write = &.{}}),
         rectangles: Query(.{.read = &.{.Position, .Rectangle, .Color}, .write = &.{}}),
@@ -40,9 +41,26 @@ pub const Render = struct {
         try self.drawStatusBars();
         try self.drawRectangles();
         try self.drawCircles();
+        try self.drawText();
         if (self.render_bounding_boxes) {
             try self.drawBoundingBoxes();
         }
+    }
+
+    fn drawText(self: *Self) !void {
+        try self.queries.text.forEach(self, struct{
+            pub fn run(_: anytype, c:anytype) !bool {
+                const text = c.Text;
+                const pos = c.Position;
+                const text_width = raylib.measureText(text.content, text.font_size);
+                const x_converted: i32 = @intFromFloat(pos.x);
+                const x: i32 = x_converted -  @divTrunc(text_width, 2);
+                const y: i32 = @intFromFloat(pos.y);
+
+                raylib.drawText(text.content, x, y,  text.font_size, c.Color.*);
+                return true;
+            }
+        }); 
     }
 
     fn drawSprites(self: *Self) !void {

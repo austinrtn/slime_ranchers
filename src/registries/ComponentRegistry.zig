@@ -15,6 +15,7 @@ pub const SlimeRef = @import("../components/SlimeRef.zig").SlimeRef;
 pub const Speed = @import("../components/Speed.zig").Speed;
 pub const Sprite = @import("../components/Sprite.zig").Sprite;
 pub const StatusBar = @import("../components/StatusBar.zig").StatusBar;
+pub const Text = @import("../components/Text.zig").Text;
 pub const Texture = @import("../components/Texture.zig").Texture;
 pub const Velocity = @import("../components/Velocity.zig").Velocity;
 pub const Wave = @import("../components/Wave.zig").Wave;
@@ -35,6 +36,7 @@ pub const CompTypeMap = struct {
     pub const Speed = @import("../components/Speed.zig").Speed;
     pub const Sprite = @import("../components/Sprite.zig").Sprite;
     pub const StatusBar = @import("../components/StatusBar.zig").StatusBar;
+    pub const Text = @import("../components/Text.zig").Text;
     pub const Texture = @import("../components/Texture.zig").Texture;
     pub const Velocity = @import("../components/Velocity.zig").Velocity;
     pub const Wave = @import("../components/Wave.zig").Wave;
@@ -56,6 +58,7 @@ pub const ComponentName = enum {
     Speed,
     Sprite,
     StatusBar,
+    Text,
     Texture,
     Velocity,
     Wave,
@@ -77,6 +80,7 @@ pub const ComponentTypes = [_]type {
     Speed,
     Sprite,
     StatusBar,
+    Text,
     Texture,
     Velocity,
     Wave,

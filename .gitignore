@@ -1,3 +1,4 @@
 zig-out/
 zig-out/bin
 .zig-cache/
+.prescient-cache

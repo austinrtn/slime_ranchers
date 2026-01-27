@@ -15,7 +15,7 @@ const build_tool_files = [_][]const u8{
     "pool_generator.zig",
     "raylib_installer.zig",
     "factory_generator.zig",
-    "system_graph",
+    "system_graph.zig",
 };
 
 const source_files_dir = "src/ecs/";
@@ -83,6 +83,9 @@ pub fn main() !void {
     try stdout.writeAll("\nDownloading and Writing Files\n");
     try stdout.flush();
 
+    var failed_files = std.ArrayList([]const u8){};
+    defer failed_files.deinit(allocator);
+
     // FIX: Added loop for root_files
     inline for(root_files) |file| {
         const link = gh_link ++ file;
@@ -90,7 +93,10 @@ pub fn main() !void {
         const path = try std.fmt.allocPrint(allocator, "{s}/{s}", .{root_dir, file});
         defer allocator.free(path);
 
-        try downloadFile(allocator, link, path);
+        downloadFile(allocator, link, path) catch {
+            try failed_files.append(allocator, link);
+        };
+        
         files_completed += 1;
         try drawProgressBar(stdout, files_completed, file_count, file);
     }
@@ -101,7 +107,10 @@ pub fn main() !void {
         const path = try std.fmt.allocPrint(allocator, "{s}/{s}{s}", .{root_dir, build_tools_dir, file});
         defer allocator.free(path);
 
-        try downloadFile(allocator, link, path);
+        downloadFile(allocator, link, path) catch {
+            try failed_files.append(allocator, link);
+        };
+
         files_completed += 1;
         try drawProgressBar(stdout, files_completed, file_count, file);
     }
@@ -118,12 +127,23 @@ pub fn main() !void {
         try drawProgressBar(stdout, files_completed, file_count, file);
     }
 
-    try stdout.writeAll("\n✓ Update complete!\n");
+    try stdout.print("\n✓ Update complete with {} errors!\n", .{failed_files.items.len});
+    try stdout.flush();
+
+    if(failed_files.items.len > 0) {
+        try stdout.print("\n\nFiles failed to download:", .{});
+        try stdout.flush();
+        for(failed_files.items) |file| {
+            try stdout.print("\n -{s}", .{file});
+            try stdout.flush();
+        }
+    }
+
     try stdout.flush();
 }
 
 fn drawProgressBar(
-    stdout: *std.Io.Writer,
+    stdout: *std.io.Writer,
     current: usize,
     total: usize,
     file: []const u8,
@@ -156,18 +176,18 @@ fn drawProgressBar(
 }
 
 fn downloadFile(allocator: std.mem.Allocator, url: []const u8, output_path: []const u8) !void {
-    // Parse uri
+    // Parse URI
     const uri = try std.Uri.parse(url);
 
     // Create client
     var client = std.http.Client{.allocator = allocator};
     defer client.deinit();
 
-    //Setup buffers for writing and redirecting
+    // Setup buffers for writing and redirecting
     var writer_buffer: [8 * 1024]u8 = undefined;
     var redirect_buffer: [8 * 1024]u8 = undefined;
 
-    //Open output and get writer
+    // Open output and get writer
     const file = try std.fs.cwd().createFile(output_path, .{});
     defer file.close();
 
@@ -183,6 +203,7 @@ fn downloadFile(allocator: std.mem.Allocator, url: []const u8, output_path: []co
     try file_writer.interface.flush();
     
     if(result.status != .ok) {
-        return error.HTTPRequest;
+        return error.HttpRequest;
     }
 }
+

@@ -5,11 +5,6 @@ const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const Data = @import("../main.zig").Data;
 
-const Ctx = struct {
-    prescient: *Prescient,
-    data: *Data,
-};
-
 pub const UpdateStatusBar = struct {
     const Self = @This();
     pub const enabled: bool = true;
@@ -17,7 +12,6 @@ pub const UpdateStatusBar = struct {
     allocator: std.mem.Allocator,
     active: bool = true,
     prescient: *Prescient = undefined,
-    data: *Data = undefined,
 
     queries: struct {
         status_bars: Query(.{.read = &.{}, .write = &.{.StatusBar}}),
@@ -25,7 +19,6 @@ pub const UpdateStatusBar = struct {
 
     pub fn init(self: *Self) !void {
         self.prescient = try Prescient.getPrescient();
-        self.data = Data.singleton;
     }
 
     pub fn update(self: *Self) !void {
@@ -33,17 +26,17 @@ pub const UpdateStatusBar = struct {
             pub fn run(ctx: anytype, c: anytype) !bool {
                 const status_bar = c.StatusBar;
                 const ecs = ctx.prescient;
-                const data = ctx.data;
+                const data = ctx.prescient.getGlobalCtx();
 
                 var current_value: f32 = 0;
                 var max_value: f32 = 0;
 
                 if(status_bar.status_type == .energy) {
-                    const energy_comp = try ecs.ent.getEntityComponentData(status_bar.entity_link, .Energy);
+                    const energy_comp = try ecs.ent.getComponent(status_bar.entity_link, .Energy);
                     current_value = energy_comp.energy;
                     max_value = energy_comp.max_energy;
                 } else if(status_bar.status_type == .health){
-                    const health_comp = try ecs.ent.getEntityComponentData(status_bar.entity_link, .Health);
+                    const health_comp = try ecs.ent.getComponent(status_bar.entity_link, .Health);
                     current_value = health_comp.health;
                     max_value = health_comp.max_health;
                 } else if(status_bar.status_type == .loading) {

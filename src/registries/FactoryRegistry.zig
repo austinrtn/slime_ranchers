@@ -6,6 +6,7 @@ pub const FactoryName = enum(u32) {
     Slime,
     StatusBar,
     Test,
+    TextFactory,
     WaveFactory,
 };
 
@@ -13,6 +14,7 @@ pub const ProtectionShield = @import("../factories/ProtectionShield.zig").Protec
 pub const Slime = @import("../factories/SlimeFactory.zig").Slime;
 pub const StatusBar = @import("../factories/StatusBar.zig").StatusBar;
 pub const Test = @import("../factories/Test.zig").Test;
+pub const TextFactory = @import("../factories/TextFactory.zig").TextFactory;
 pub const WaveFactory = @import("../factories/WaveFactory.zig").WaveFactory;
 
 pub const factoryTypes = struct {
@@ -20,6 +22,7 @@ pub const factoryTypes = struct {
     pub const Slime = @import("../factories/SlimeFactory.zig").Slime;
     pub const StatusBar = @import("../factories/StatusBar.zig").StatusBar;
     pub const Test = @import("../factories/Test.zig").Test;
+    pub const TextFactory = @import("../factories/TextFactory.zig").TextFactory;
     pub const WaveFactory = @import("../factories/WaveFactory.zig").WaveFactory;
 };
 
@@ -28,6 +31,7 @@ pub const factory_types = [_]type{
     Slime,
     StatusBar,
     Test,
+    TextFactory,
     WaveFactory,
 };
 

@@ -5,26 +5,20 @@ const ComponentName = CR.ComponentName;
 
 // Define which components this pool supports
 const pool_components = &[_]ComponentName{
-    .Health,
-    .Attack,
-    .Energy,
-    .Controller,
-    .AI,
+    // Add your components here, e.g.:
+    // .Position,
+    // .Velocity,
 };
 
 const req_components = &[_]ComponentName{
     .Position,
-    .Velocity,
-    .BoundingBox,
-    .Speed,
-    .Sprite,
-    .Texture,
-    .Slime,
+    .Color,
+    .Text,
 };
 
-pub const SlimePool = EntityPool(.{
-    .name = .SlimePool,
+pub const TextPool = EntityPool(.{
+    .name = .TextPool,
     .components = pool_components,
     .req = req_components,
-    .storage_strategy = .ARCHETYPE,
+    .storage_strategy = .SPARSE,
 });

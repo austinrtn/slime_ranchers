@@ -158,6 +158,25 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
             return &@field(self.storage, field_name);
         }
 
+        pub fn setSystemActive(self: *Self, comptime system: SR.SystemName, active: bool) !void {
+            var sys = &@field(self.storage, @tagName(system));
+            const was_active = sys.active;
+            sys.active = active;
+
+            // If activating a previously inactive system, refresh all queries
+            // to ensure they include all existing archetypes
+            if (active and !was_active) {
+                inline for (std.meta.fields(@TypeOf(sys.queries))) |query_field| {
+                    try @field(sys.queries, query_field.name).refresh();
+                }
+            }
+        }
+
+        pub fn isSystemActive(self: *Self, comptime system: SR.SystemName) bool {
+            const sys = &@field(self.storage, @tagName(system));
+            return sys.active;
+        }
+
         pub fn update(self: *Self) !void {
             // Use runtime-sorted function pointers
             for (self.update_fns_sorted) |update_fn| {

@@ -1,4 +1,18 @@
 const raylib = @import("raylib");
+const std = @import("std");
+
+// Texture cache to avoid loading the same textures multiple times
+const TextureCache = struct {
+    idle_texture: ?raylib.Texture2D = null,
+    moving_texture: ?raylib.Texture2D = null,
+    attack_texture: ?raylib.Texture2D = null,
+    loaded: bool = false,
+};
+
+// Module-level texture caches for each slime type
+var slime1_cache: TextureCache = .{};
+var slime2_cache: TextureCache = .{};
+var slime3_cache: TextureCache = .{};
 
 pub const Slime = struct {
     const Self = @This();
@@ -12,9 +26,10 @@ pub const Slime = struct {
         idling,
         moving,
         attacking,
-        recovering, 
+        recovering,
     };
 
+    is_alive: bool = true,
     idle_path: [:0]const u8,
     moving_path: [:0]const u8,
     attack_path: [:0]const u8,
@@ -31,24 +46,39 @@ pub const Slime = struct {
         var slime: Self = undefined;
         switch(slime_type) {
             .slime1 => {
-                slime = SlimeTypes.slime1; 
+                slime = SlimeTypes.slime1;
+                try ensureTexturesLoaded(&slime1_cache, slime.idle_path, slime.moving_path, slime.attack_path);
+                slime.idle_texture = slime1_cache.idle_texture.?;
+                slime.moving_texture = slime1_cache.moving_texture.?;
+                slime.attack_texture = slime1_cache.attack_texture.?;
             },
             .slime2 => {
-                slime = SlimeTypes.slime2; 
+                slime = SlimeTypes.slime2;
+                try ensureTexturesLoaded(&slime2_cache, slime.idle_path, slime.moving_path, slime.attack_path);
+                slime.idle_texture = slime2_cache.idle_texture.?;
+                slime.moving_texture = slime2_cache.moving_texture.?;
+                slime.attack_texture = slime2_cache.attack_texture.?;
             },
             .slime3 => {
-                slime = SlimeTypes.slime3; 
+                slime = SlimeTypes.slime3;
+                try ensureTexturesLoaded(&slime3_cache, slime.idle_path, slime.moving_path, slime.attack_path);
+                slime.idle_texture = slime3_cache.idle_texture.?;
+                slime.moving_texture = slime3_cache.moving_texture.?;
+                slime.attack_texture = slime3_cache.attack_texture.?;
             },
         }
-        try slime.load_textures();
         slime.current_texture = slime.idle_texture;
         return slime;
     }
 
-    pub fn load_textures(self: *Self) !void {
-        self.idle_texture = try raylib.loadTexture(self.idle_path);
-        self.moving_texture = try raylib.loadTexture(self.moving_path);
-        self.attack_texture = try raylib.loadTexture(self.attack_path);
+    fn ensureTexturesLoaded(cache: *TextureCache, idle_path: [:0]const u8, moving_path: [:0]const u8, attack_path: [:0]const u8) !void {
+        if (!cache.loaded) {
+            std.debug.print("Loading slime textures: {s}\n", .{idle_path});
+            cache.idle_texture = try raylib.loadTexture(idle_path);
+            cache.moving_texture = try raylib.loadTexture(moving_path);
+            cache.attack_texture = try raylib.loadTexture(attack_path);
+            cache.loaded = true;
+        }
     }
 
 };
