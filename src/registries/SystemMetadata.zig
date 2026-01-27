@@ -92,6 +92,14 @@ pub const all_metadata: []const SystemMetadata = &.{
         .has_queries = true,
     },
     .{
+        .name = "Track",
+        .reads = &.{"Position"},
+        .writes = &.{"Velocity"},
+        .runs_before = &.{"Movement", "WaveManager", "Controller", "AIManager"},
+        .runs_after = &.{},
+        .has_queries = true,
+    },
+    .{
         .name = "UpdateStatusBar",
         .reads = &.{},
         .writes = &.{"StatusBar"},
@@ -110,4 +118,4 @@ pub const all_metadata: []const SystemMetadata = &.{
 };
 
 /// Pre-computed execution order based on dependencies
-pub const execution_order: []const usize = &.{5, 7, 10, 6, 11, 0, 8, 4, 3, 1, 2, 9};
+pub const execution_order: []const usize = &.{7, 10, 11, 5, 6, 12, 0, 8, 4, 3, 1, 2, 9};

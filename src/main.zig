@@ -74,7 +74,7 @@ pub fn main() !void {
             try spawnEnemy(max_enemies);
             ctx.sprites_loaded += 1;
             if(ctx.sprites_loaded >= 0) {
-                try prescient.setSystemActive(.AIManager, true);
+                //try prescient.setSystemActive(.AIManager, true);
                 prescient.ent.destroy(load_bar) catch continue;
         
                 initing = false;

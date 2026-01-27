@@ -7,11 +7,11 @@ const Raylib = @import("raylib");
 
 pub const Track = struct {
     const Self = @This();
-    pub const enabled: bool = false;
+    pub const enabled: bool = true;
 
     // Track calculates velocity based on position, then Movement/WaveManager apply it
     // Override component deps: Track reads Position which Movement/WaveManager write
-    pub const runs_before = &.{ .Movement, .WaveManager };
+    pub const runs_before = &.{ .Movement, .WaveManager, .Controller, .AIManager};
 
     allocator: std.mem.Allocator,
     active: bool = true,
@@ -30,13 +30,12 @@ pub const Track = struct {
                 const mouse = Raylib.getMousePosition();
 
                 const dist = Raylib.Vector2.subtract(mouse, pos_vect);
-                const length = Raylib.Vector2.length(dist);
+//                const length = Raylib.Vector2.length(dist);
 
-                if(length > 150) {
+ //               if(length > 150) {
                     vel.dx = 0;
                     vel.dy = 0;
-                    return true;
-                }
+  //              }
 
                 const velocity = Raylib.Vector2.scale(Raylib.Vector2.normalize(dist), data.speed);
 
