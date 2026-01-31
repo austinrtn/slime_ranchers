@@ -4,10 +4,12 @@ const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
+const Phase = @import("../registries/Phases.zig").Phase;
 
 pub const Attack = struct {
     const Self = @This();
     pub const enabled: bool = true;
+    pub const phase: Phase = .Update;
     // Removed runs_before - EnergyManager writes Slime which Attack reads,
     // so EnergyManager should run first (component dependency handles this)
 

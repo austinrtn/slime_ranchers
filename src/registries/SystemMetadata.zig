@@ -3,6 +3,7 @@
 
 pub const SystemMetadata = struct {
     name: []const u8,
+    phase: []const u8,
     reads: []const []const u8,
     writes: []const []const u8,
     runs_before: []const []const u8,
@@ -13,6 +14,7 @@ pub const SystemMetadata = struct {
 pub const all_metadata: []const SystemMetadata = &.{
     .{
         .name = "AIManager",
+        .phase = "Input",
         .reads = &.{"Position", "Speed"},
         .writes = &.{"AI", "Velocity"},
         .runs_before = &.{"Movement"},
@@ -21,6 +23,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "Animate",
+        .phase = "PostUpdate",
         .reads = &.{},
         .writes = &.{"Sprite"},
         .runs_before = &.{},
@@ -29,6 +32,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "Attack",
+        .phase = "Update",
         .reads = &.{"Slime", "Energy"},
         .writes = &.{"Attack"},
         .runs_before = &.{},
@@ -37,6 +41,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "ChangeAnim",
+        .phase = "PostUpdate",
         .reads = &.{},
         .writes = &.{"Sprite", "Texture", "BoundingBox", "Slime"},
         .runs_before = &.{"Animate"},
@@ -45,6 +50,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "Collision",
+        .phase = "Update",
         .reads = &.{"Position", "Sprite", "Slime", "Wave"},
         .writes = &.{"BoundingBox"},
         .runs_before = &.{"ChangeAnim", "Animate"},
@@ -53,6 +59,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "Controller",
+        .phase = "Input",
         .reads = &.{"Controller", "Speed"},
         .writes = &.{"Slime", "Sprite", "Velocity", "Attack"},
         .runs_before = &.{"AIManager", "Animate", "Attack", "ChangeAnim", "EnergyManager", "WaveManager"},
@@ -61,7 +68,8 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "EnergyManager",
-        .reads = &.{},
+        .phase = "Update",
+        .reads = &.{"Attack"},
         .writes = &.{"Energy", "Slime"},
         .runs_before = &.{"ChangeAnim"},
         .runs_after = &.{},
@@ -69,6 +77,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "HealthManager",
+        .phase = "Update",
         .reads = &.{"Controller"},
         .writes = &.{"Health"},
         .runs_before = &.{"OtherSystem"},
@@ -77,6 +86,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "Movement",
+        .phase = "Update",
         .reads = &.{"Velocity"},
         .writes = &.{"Position"},
         .runs_before = &.{},
@@ -85,6 +95,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "Render",
+        .phase = "Render",
         .reads = &.{"Position", "Text", "Color", "Texture", "Sprite", "Rectangle", "Circle", "StatusBar", "BoundingBox"},
         .writes = &.{},
         .runs_before = &.{},
@@ -92,15 +103,8 @@ pub const all_metadata: []const SystemMetadata = &.{
         .has_queries = true,
     },
     .{
-        .name = "Track",
-        .reads = &.{"Position"},
-        .writes = &.{"Velocity"},
-        .runs_before = &.{"Movement", "WaveManager", "Controller", "AIManager"},
-        .runs_after = &.{},
-        .has_queries = true,
-    },
-    .{
         .name = "UpdateStatusBar",
+        .phase = "PostUpdate",
         .reads = &.{},
         .writes = &.{"StatusBar"},
         .runs_before = &.{},
@@ -109,6 +113,7 @@ pub const all_metadata: []const SystemMetadata = &.{
     },
     .{
         .name = "WaveManager",
+        .phase = "PreUpdate",
         .reads = &.{"SlimeRef"},
         .writes = &.{"Position", "Sprite", "Wave"},
         .runs_before = &.{"Movement", "Animate", "ChangeAnim", "Render"},
@@ -118,4 +123,4 @@ pub const all_metadata: []const SystemMetadata = &.{
 };
 
 /// Pre-computed execution order based on dependencies
-pub const execution_order: []const usize = &.{7, 10, 11, 5, 6, 12, 0, 8, 4, 3, 1, 2, 9};
+pub const execution_order: []const usize = &.{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};

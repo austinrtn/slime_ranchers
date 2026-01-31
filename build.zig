@@ -47,8 +47,32 @@ pub fn build(b: *std.Build) void {
     run_registry.addArg(b.pathFromRoot("."));
     registry_step.dependOn(&run_registry.step);
 
-    // Auto-run registry builder before compiling
-    exe.step.dependOn(&run_registry.step);
+    // System sequence generator
+    const system_seq_gen = b.addExecutable(.{
+        .name = "system-seq-gen",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("src/build_tools/system_sequence_generator.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "SystemMetadata", .module = b.addModule("SystemMetadata", .{
+                    .root_source_file = b.path("src/registries/SystemMetadata.zig"),
+                    .target = target,
+                }) },
+                .{ .name = "Phases", .module = b.addModule("Phases", .{
+                    .root_source_file = b.path("src/registries/Phases.zig"),
+                    .target = target,
+                }) },
+            },
+        }),
+    });
+    system_seq_gen.step.dependOn(&run_registry.step);
+
+    const run_system_seq_auto = b.addRunArtifact(system_seq_gen);
+    run_system_seq_auto.addArg(b.pathFromRoot("."));
+
+    // Auto-run registry builder and system sequence generator before compiling
+    exe.step.dependOn(&run_system_seq_auto.step);
 
     const run_step = b.step("run", "Run the app");
     const run_cmd = b.addRunArtifact(exe);
@@ -183,6 +207,15 @@ pub fn build(b: *std.Build) void {
     const run_graph = b.addRunArtifact(system_graph);
     if (b.args) |args| run_graph.addArgs(args);
     graph_step.dependOn(&run_graph.step);
+
+    // =========================================================================
+    // System sequence generator: zig build system-seq
+    // =========================================================================
+
+    const system_seq_step = b.step("system-seq", "Generate SystemSequence.zig with pre-computed execution order");
+    const run_system_seq_manual = b.addRunArtifact(system_seq_gen);
+    run_system_seq_manual.addArg(b.pathFromRoot("."));
+    system_seq_step.dependOn(&run_system_seq_manual.step);
 
     // =========================================================================
     // Raylib installer: zig build raylib-install

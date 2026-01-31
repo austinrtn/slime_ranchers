@@ -4,10 +4,12 @@ const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const Raylib = @import("raylib");
+const Phase = @import("../registries/Phases.zig").Phase;
 
 pub const Track = struct {
     const Self = @This();
-    pub const enabled: bool = true;
+    pub const enabled: bool = false;
+    pub const phase: Phase = .Input;
 
     // Track calculates velocity based on position, then Movement/WaveManager apply it
     // Override component deps: Track reads Position which Movement/WaveManager write

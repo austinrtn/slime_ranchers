@@ -48,6 +48,7 @@ pub const Prescient = struct {
     _entity_manager: EM.EntityManager,
     _pool_manager: *PM.PoolManager,
     _system_manager: SM.SystemManager(all_systems),
+    _running: bool = false,
     ent: Ent = undefined,
 
     pub fn init(allocator: std.mem.Allocator) !*Self {
@@ -68,7 +69,7 @@ pub const Prescient = struct {
             ._system_manager = system_manager,
             ._global_ctx = global_ctx,
         };
-        self.ent = Ent.init(allocator, &self._entity_manager, pool_manager);
+        self.ent = Ent.init(allocator, &self._entity_manager, pool_manager, &self._running);
 
         _initiated = true;
         _Prescient = self;
@@ -89,7 +90,14 @@ pub const Prescient = struct {
         allocator.destroy(self);
     }
 
+    pub fn start(self: *Self) !void {
+        if(self._running) return error.PrescientAlreadyStarted;
+        self._running = true;
+    }
+
     pub fn update(self: *Self) !void {
+        if(!self._running) return error.PrescientNotStarted;
+
         try self._pool_manager.flushAllPools(&self._entity_manager);
         try self._system_manager.update();
         self._pool_manager.flushNewAndReallocatingLists();
@@ -102,7 +110,7 @@ pub const Prescient = struct {
 
     pub fn getPool(self: *Self, comptime pool_name: PR.PoolName) !PoolInterface(pool_name) {
         const pool = try self._pool_manager.getOrCreatePool(pool_name);
-        return PoolInterface(pool_name).init(pool, &self._entity_manager);
+        return PoolInterface(pool_name).init(pool, &self._entity_manager, &self._running);
     }
 
     pub fn getGlobalCtx(self: *Self) *GlobalCtx {
@@ -136,16 +144,19 @@ pub const Ent = struct {
     _allocator: std.mem.Allocator,
     _entity_manager: *EM.EntityManager,
     _pool_manager: *PM.PoolManager,
+    _running: *bool,
 
     pub fn init(
         allocator: std.mem.Allocator,
         entity_manager: *EM.EntityManager,
         pool_manager: *PM.PoolManager,
+        running: *bool,
     ) Self {
         const self = Self{
             ._allocator = allocator,
             ._entity_manager = entity_manager,
             ._pool_manager = pool_manager,
+            ._running = running,
         };
 
         return self;
@@ -160,7 +171,7 @@ pub const Ent = struct {
 
                 pub fn run(namespace: *Self, ent: EM.Entity, comptime pool_name: PR.PoolName, value: anytype) !void {
                     const pool = try namespace._pool_manager.getOrCreatePool(pool_name);
-                    var pool_interface = pool.getInterface(namespace._entity_manager);
+                    var pool_interface = pool.getInterface(namespace._entity_manager, namespace._running);
                     if(comptime PR.poolHasComponent(pool_name, component))
                         try pool_interface.addComponent(ent, component, value);
                 }
@@ -173,7 +184,7 @@ pub const Ent = struct {
                 pub fn run(namespace: *Self, ent: EM.Entity, comptime pool_name: PR.PoolName, data: anytype) !void {
                     _ = data;
                     const pool = try namespace._pool_manager.getOrCreatePool(pool_name);
-                    var pool_interface = pool.getInterface(namespace._entity_manager);
+                    var pool_interface = pool.getInterface(namespace._entity_manager, namespace._running);
                     if(comptime PR.poolHasComponent(pool_name, component))
                         try pool_interface.removeComponent(ent, component);
                 }
@@ -186,7 +197,7 @@ pub const Ent = struct {
                 pub fn run(namespace: *Self, ent: EM.Entity, comptime pool_name: PR.PoolName, data: anytype) !void {
                     _ = data;
                     const pool = try namespace._pool_manager.getOrCreatePool(pool_name);
-                    var pool_interface = pool.getInterface(namespace._entity_manager);
+                    var pool_interface = pool.getInterface(namespace._entity_manager, namespace._running);
                     try pool_interface.destroyEntity(ent);
                 }
             });
@@ -200,7 +211,7 @@ pub const Ent = struct {
 
                 if (slot.pool_name == pool_name) {
                     const pool = try self._pool_manager.getOrCreatePool(pool_name);
-                    var pool_interface = pool.getInterface(self._entity_manager);
+                    var pool_interface = pool.getInterface(self._entity_manager, self._running);
 
                     if (comptime PR.poolHasComponent(pool_name, component)) {
                         return try pool_interface.hasComponent(entity, component);
@@ -221,7 +232,7 @@ pub const Ent = struct {
 
                 if (slot.pool_name == pool_name) {
                     const pool = try self._pool_manager.getOrCreatePool(pool_name);
-                    var pool_interface = pool.getInterface(self._entity_manager);
+                    var pool_interface = pool.getInterface(self._entity_manager, self._running);
 
                     if (comptime PR.poolHasComponent(pool_name, component)) {
                         return try pool_interface.getComponent(entity, component);

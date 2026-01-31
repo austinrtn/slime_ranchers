@@ -149,8 +149,8 @@ pub fn ArchetypePoolType(comptime config: PoolConfig) type {
             return self;
         }
 
-        pub fn getInterface(self: *Self, entity_manager: *EM.EntityManager) PoolInterfaceType(NAME) {
-            return PoolInterfaceType(NAME).init(self, entity_manager);
+        pub fn getInterface(self: *Self, entity_manager: *EM.EntityManager, running: *bool) PoolInterfaceType(NAME) {
+            return PoolInterfaceType(NAME).init(self, entity_manager, running);
         }
 
         fn initArchetype(allocator: std.mem.Allocator, archetype_index: usize, mask: MaskManager.Mask) !archetype_storage {
@@ -213,7 +213,7 @@ pub fn ArchetypePoolType(comptime config: PoolConfig) type {
             return self.mask_list[@as(usize, mask_list_index)];
         }
 
-        pub fn addEntity(self: *Self, entity: Entity, component_data: Builder) !struct { storage_index: u32, archetype_index: u32 }{
+        pub fn addEntity(self: *Self, entity: Entity, component_data: Builder) !struct { storage_index: u32, mask_list_index: u32 }{
             // Build component mask at runtime by checking which optional fields are non-null
             // Required components are always included (enforced by Builder type system)
             var mask: MaskManager.Mask = 0;
@@ -281,17 +281,18 @@ pub fn ArchetypePoolType(comptime config: PoolConfig) type {
             }
             return .{
                 .storage_index = @intCast(archetype.entities.items.len - 1),
-                .archetype_index = @intCast(archetype_idx),
+                .mask_list_index = @intCast(archetype_idx),
             };
         }
 
-        pub fn removeEntity(self: *Self, mask_list_index: u32,  archetype_index: u32, pool_name: PoolName) !Entity {
+        pub fn removeEntity(self: *Self, mask_list_index: u32,  archetype_index: u32, pool_name: PoolName) !?Entity {
             try validateEntityInPool(pool_name);
             const mask_list_idx: usize = @intCast(mask_list_index);
             const entity_mask = self.mask_list.items[mask_list_idx];
             var archetype = &self.archetype_list.items[mask_list_idx];
 
-            const swapped_entity = archetype.entities.items[archetype.entities.items.len - 1];
+            const last_index = archetype.entities.items.len - 1;
+            const swapped_entity = if (archetype_index == last_index) null else archetype.entities.items[last_index];
             _ = archetype.entities.swapRemove(archetype_index);
 
             inline for(pool_components) |component_name| {
@@ -364,7 +365,7 @@ pub fn ArchetypePoolType(comptime config: PoolConfig) type {
                     .entity = entry.entity,
                     .storage_index = undefined,
                     .mask_list_index = undefined,
-                    .swapped_entity = if (std.meta.eql(entry.entity, swapped_entity)) null else swapped_entity,
+                    .swapped_entity = if (swapped_entity) |swapped| (if (std.meta.eql(entry.entity, swapped)) null else swapped) else null,
                 });
             }
 
@@ -375,7 +376,7 @@ pub fn ArchetypePoolType(comptime config: PoolConfig) type {
                     .operation = .create,
                     .entity = entry.entity,
                     .storage_index = result.storage_index,
-                    .mask_list_index = result.archetype_index,
+                    .mask_list_index = result.mask_list_index,
                     .swapped_entity = null,
                 });
             }
@@ -504,6 +505,133 @@ pub fn ArchetypePoolType(comptime config: PoolConfig) type {
                     is_migrating,
                 );
             }
+        }
+
+        // ===== Immediate Component Operations =====
+
+        /// Immediately adds a component to an entity.
+        /// Use when not running (setup phase) to avoid queueing overhead.
+        pub fn addComponent(
+            self: *Self,
+            mask_list_index: u32,
+            storage_index: u32,
+            comptime component: CR.ComponentName,
+            data: CR.getTypeByName(component),
+        ) !MigrationResult {
+            validateComponentInPool(component);
+
+            const old_mask = self.mask_list.items[mask_list_index];
+            const component_bit = MaskManager.Comptime.componentToBit(component);
+
+            if (MaskManager.maskContains(old_mask, component_bit)) {
+                return error.AddingExistingComponent;
+            }
+
+            const new_mask = MaskManager.Runtime.addComponent(old_mask, component);
+
+            const src_index = self.getArchetype(old_mask) orelse return error.ArchetypeDoesNotExist;
+            const dest_index = try self.getOrCreateArchetype(new_mask);
+
+            const src_archetype = &self.archetype_list.items[src_index];
+            const dest_archetype = &self.archetype_list.items[dest_index];
+
+            // Capture entity before moveEntity (swapRemove modifies source array)
+            const entity = src_archetype.entities.items[storage_index];
+
+            const move_result = try moveEntity(
+                self.allocator,
+                dest_archetype,
+                new_mask,
+                src_archetype,
+                old_mask,
+                storage_index,
+            );
+
+            // Set the new component data
+            const dest_array = @field(dest_archetype, @tagName(component)).?;
+            dest_array.items[move_result.archetype_index] = data;
+
+            // Mark archetypes for re-caching
+            if (!src_archetype.reallocating) {
+                src_archetype.reallocating = true;
+                try self.reallocated_archetypes.append(self.allocator, src_index);
+            }
+            if (!dest_archetype.reallocating) {
+                dest_archetype.reallocating = true;
+                try self.reallocated_archetypes.append(self.allocator, dest_index);
+            }
+
+            return MigrationResult{
+                .entity = entity,
+                .storage_index = move_result.archetype_index,
+                .swapped_entity = move_result.swapped_entity,
+                .mask_list_index = @intCast(dest_index),
+            };
+        }
+
+        /// Immediately removes a component from an entity.
+        /// Use when not running (setup phase) to avoid queueing overhead.
+        pub fn removeComponent(
+            self: *Self,
+            mask_list_index: u32,
+            storage_index: u32,
+            comptime component: CR.ComponentName,
+        ) !MigrationResult {
+            validateComponentInPool(component);
+
+            // Compile-time check: prevent removing required components
+            comptime {
+                for (req) |req_comp| {
+                    if (req_comp == component) {
+                        @compileError("You can not remove required component " ++
+                            @tagName(component) ++ " from pool " ++ @typeName(Self));
+                    }
+                }
+            }
+
+            const old_mask = self.mask_list.items[mask_list_index];
+            const component_bit = MaskManager.Comptime.componentToBit(component);
+
+            if (!MaskManager.maskContains(old_mask, component_bit)) {
+                return error.RemovingNonexistingComponent;
+            }
+
+            const new_mask = MaskManager.Runtime.removeComponent(old_mask, component);
+
+            const src_index = self.getArchetype(old_mask) orelse return error.ArchetypeDoesNotExist;
+            const dest_index = try self.getOrCreateArchetype(new_mask);
+
+            const src_archetype = &self.archetype_list.items[src_index];
+            const dest_archetype = &self.archetype_list.items[dest_index];
+
+            // Capture entity before moveEntity (swapRemove modifies source array)
+            const entity = src_archetype.entities.items[storage_index];
+
+            const move_result = try moveEntity(
+                self.allocator,
+                dest_archetype,
+                new_mask,
+                src_archetype,
+                old_mask,
+                storage_index,
+            );
+
+            // Mark archetypes for re-caching
+            if (!src_archetype.reallocating) {
+                src_archetype.reallocating = true;
+                try self.reallocated_archetypes.append(self.allocator, src_index);
+            }
+            if (!dest_archetype.reallocating) {
+                dest_archetype.reallocating = true;
+                try self.reallocated_archetypes.append(self.allocator, dest_index);
+            }
+
+            return MigrationResult{
+                .entity = entity,
+                .storage_index = move_result.archetype_index,
+                .swapped_entity = move_result.swapped_entity,
+                .mask_list_index = @intCast(dest_index),
+            };
         }
 
         pub fn flushMigrationQueue(self: *Self) ![]MigrationResult{

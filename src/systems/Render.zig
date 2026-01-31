@@ -4,10 +4,12 @@ const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
+const Phase = @import("../registries/Phases.zig").Phase;
 
 pub const Render = struct {
     const Self = @This();
     pub const enabled: bool = true;
+    pub const phase: Phase = .Render;
 
     allocator: std.mem.Allocator,
     active: bool = true,

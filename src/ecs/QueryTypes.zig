@@ -125,6 +125,7 @@ fn shouldIncludePool(comptime config: QueryConfig, comptime pool_index: usize) b
 }
 
 pub fn countMatchingPools(comptime config: QueryConfig) comptime_int {
+    @setEvalBranchQuota(10000);
     const components = config.allComponents();
     const exclude = config.exclude;
     var count: comptime_int = 0;
@@ -192,6 +193,7 @@ const PoolMatch = struct {
 
 /// Returns array of matching pool names with their access types
 fn findMatchingPools(comptime config: QueryConfig) [countMatchingPools(config)]PoolMatch {
+    @setEvalBranchQuota(10000);
     const components = config.allComponents();
     const exclude = config.exclude;
     const count = countMatchingPools(config);
@@ -231,8 +233,6 @@ fn findMatchingPools(comptime config: QueryConfig) [countMatchingPools(config)]P
         for(components) |component| {
             const component_bit = MaskManager.Comptime.componentToBit(component);
             const in_pool = MaskManager.maskContains(pool_type.pool_mask, component_bit);
-
-            @setEvalBranchQuota(3000);
 
             if(!in_pool) {
                 query_match = false;

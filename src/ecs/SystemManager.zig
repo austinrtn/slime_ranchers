@@ -2,6 +2,7 @@ const std = @import("std");
 const SR = @import("../registries/SystemRegistry.zig");
 const PM = @import("PoolManager.zig");
 const SDG = @import("SystemDependencyGraph.zig");
+const SystemSequence = @import("../registries/SystemSequence.zig");
 
 fn SystemManagerStorage(comptime systems: []const SR.SystemName) type {
     var fields: [systems.len]std.builtin.Type.StructField = undefined;
@@ -54,6 +55,15 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
             break :blk fns;
         };
 
+        // Comptime: array of update functions sorted by execution order
+        const update_fns_sorted: [n]UpdateFn = blk: {
+            var fns: [n]UpdateFn = undefined;
+            for (SystemSequence.execution_order, 0..) |idx, i| {
+                fns[i] = update_fns_by_index[idx];
+            }
+            break :blk fns;
+        };
+
         // Generate an update function for a specific system at comptime
         fn makeUpdateFn(comptime system: SR.SystemName) UpdateFn {
             return struct {
@@ -77,9 +87,6 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
         allocator: std.mem.Allocator,
         storage: SystemManagerStorage(systems),
         pool_manager: *PM.PoolManager,
-        // Runtime: sorted indices and update function pointers
-        sorted_indices: [n]usize,
-        update_fns_sorted: [n]UpdateFn,
 
         pub fn init(allocator: std.mem.Allocator, pool_manager: *PM.PoolManager) !Self {
             var self: Self = undefined;
@@ -105,14 +112,6 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
                 @field(storage, @tagName(systems[i])) = sys_instance;
             }
             self.storage = storage;
-
-            // Runtime: sort systems by dependencies
-            try SDG.sortSystemsRuntime(n, systems, &metadata, &self.sorted_indices);
-
-            // Build sorted function pointer array
-            for (self.sorted_indices, 0..) |idx, i| {
-                self.update_fns_sorted[i] = update_fns_by_index[idx];
-            }
 
             return self;
         }
@@ -178,8 +177,8 @@ pub fn SystemManager(comptime systems: []const SR.SystemName) type {
         }
 
         pub fn update(self: *Self) !void {
-            // Use runtime-sorted function pointers
-            for (self.update_fns_sorted) |update_fn| {
+            // Use comptime-sorted function pointers from SystemSequence
+            inline for (update_fns_sorted) |update_fn| {
                 try update_fn(self);
             }
         }

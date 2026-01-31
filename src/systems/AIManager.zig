@@ -4,10 +4,12 @@ const SR = @import("../registries/SystemRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
+const Phase = @import("../registries/Phases.zig").Phase;
 
 pub const AIManager = struct {
     const Self = @This();
     pub const enabled: bool = true;
+    pub const phase: Phase = .Input;
 
     // Optional: resolve write-write conflicts with other systems
     pub const runs_before = &[_]SR.SystemName{ .Movement};

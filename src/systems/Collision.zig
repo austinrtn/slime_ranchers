@@ -6,10 +6,12 @@ const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
 const comps = Prescient.Components.Types;
 const comp_name = Prescient.Components.Names;
+const Phase = @import("../registries/Phases.zig").Phase;
 
 pub const Collision = struct {
     const Self = @This();
     pub const enabled: bool = true;
+    pub const phase: Phase = .Update;
     pub const runs_before = &.{.ChangeAnim, .Animate};
 
     const CollisionEntity = struct {

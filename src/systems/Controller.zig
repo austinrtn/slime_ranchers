@@ -4,10 +4,12 @@ const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
+const Phase = @import("../registries/Phases.zig").Phase;
 
 pub const Controller = struct {
     const Self = @This();
     pub const enabled: bool = true;
+    pub const phase: Phase = .Input;
     pub const runs_before = &.{.AIManager, .Animate, .Attack, .ChangeAnim, .EnergyManager, .WaveManager, };
 
     allocator: std.mem.Allocator,
@@ -31,21 +33,7 @@ pub const Controller = struct {
                 const sprite = c.Sprite;
                 const atk = c.Attack;
 
-                if(slime.state == .attacking) {
-                    if(sprite.animation_complete) {
-                        slime.state = .idling;
-                        atk.recovering = true;
-                    }
-                }
-                else if(raylib.isKeyDown(.space) and atk.can_attack) {
-                    sprite.frame_index = 0;
-                    sprite.delay_counter = 0;
-                    sprite.animation_complete = false;
-                    slime.state = .attacking;
-                    //var factory = Prescient.Factory.WaveFactory.init();
-                    _ = try data.wave_factory.spawn(.{ .position = .{.x = 0, .y = 0}, .slime_ref = ent});
-                }
-                if(slime.state != .attacking and slime.state != .recovering){
+                if(slime.state != .recovering){
                     //UP & DOWN
                     if(raylib.isKeyDown(.down)) {
                         vel.dy = spd.*;
@@ -77,6 +65,21 @@ pub const Controller = struct {
                     (raylib.isKeyUp(.up) and raylib.isKeyUp(.down) and raylib.isKeyUp(.left) and raylib.isKeyUp(.right))
                 ) {
                     slime.state = .idling;
+                }
+
+                if(slime.state == .attacking) {
+                    if(sprite.animation_complete) {
+                        slime.state = .idling;
+                        atk.recovering = true;
+                    }
+                }
+                else if(raylib.isKeyDown(.space) and atk.can_attack) {
+                    sprite.frame_index = 0;
+                    sprite.delay_counter = 0;
+                    sprite.animation_complete = false;
+                    slime.state = .attacking;
+                    //var factory = Prescient.Factory.WaveFactory.init();
+                    _ = try data.wave_factory.spawn(.{ .position = .{.x = 0, .y = 0}, .slime_ref = ent});
                 }
 
                 if(slime.state == .idling or slime.state == .recovering) {

@@ -14,6 +14,7 @@ pub fn PoolInterfaceType(comptime pool_name: PR.PoolName) type {
         const Pool = PR.getPoolFromName(pool_name);
 
         pool: *Pool,
+        running: *bool,
         entity_manager: *EM.EntityManager,
 
         /// EntityBuilder type for creating entities in this pool
@@ -21,10 +22,11 @@ pub fn PoolInterfaceType(comptime pool_name: PR.PoolName) type {
         /// Optional components are nullable fields with null defaults
         pub const Builder = Pool.Builder;
 
-        pub fn init(pool: *Pool, entity_manager: *EM.EntityManager) Self{
+        pub fn init(pool: *Pool, entity_manager: *EM.EntityManager, running: *bool) Self{
             return Self{
                 .pool = pool,
                 .entity_manager = entity_manager,
+                .running = running
             };
         }
 
@@ -34,18 +36,38 @@ pub fn PoolInterfaceType(comptime pool_name: PR.PoolName) type {
         pub fn createEntity(self: *Self, component_data: Builder) !EM.Entity {
             // Reserve a pending slot - entity handle is valid but marked pending
             var entity_slot = try self.entity_manager.getNewPendingSlot(Pool.NAME);
+            const entity = entity_slot.getEntity();
 
-            // Queue the actual creation for later
-            try self.pool.queueEntityCreate(entity_slot.getEntity(), component_data);
+            // Queue the actual creation for later, or add immediately if not running
+            if(self.running.*) {
+                try self.pool.queueEntityCreate(entity, component_data);
+            } else {
+                const result = try self.pool.addEntity(entity, component_data);
+                EM.EntityManager.finalizePendingSlot(entity_slot, result.mask_list_index, result.storage_index);
+            }
 
             return entity_slot.getEntity();
         }
 
-        /// Destroys an entity (deferred).
-        /// The entity remains accessible until the next flush.
+        /// Destroys an entity (deferred when running, immediate when not).
+        /// When running, the entity remains accessible until the next flush.
         pub fn destroyEntity(self: *Self, entity: EM.Entity) !void {
             // Use unchecked access since we need to get the slot even if pending
             const entity_slot = try self.entity_manager.getSlotUnchecked(entity);
+
+            // Immediate destruction when not running (setup phase)
+            if(!self.running.*) {
+                const swapped_entity = try self.pool.removeEntity(entity_slot.storage_index, entity_slot.mask_list_index, entity_slot.pool_name);
+
+                // Update swapped entity if applicable
+                if (swapped_entity) |swapped| {
+                    const swapped_slot = try self.entity_manager.getSlotUnchecked(swapped);
+                    swapped_slot.storage_index = entity_slot.storage_index;
+                }
+
+                try self.entity_manager.remove(entity_slot);
+                return;
+            }
 
             // Can't destroy an entity that's already pending destroy
             if (entity_slot.is_pending_destroy) return error.EntityAlreadyPendingDestroy;
@@ -81,6 +103,30 @@ pub fn PoolInterfaceType(comptime pool_name: PR.PoolName) type {
 
         pub fn addComponent(self: *Self, entity: EM.Entity, comptime component: CR.ComponentName, data: CR.getTypeByName(component)) !void {
             const entity_slot = try self.entity_manager.getSlot(entity);
+
+            // Immediate migration when not running (setup phase)
+            if (!self.running.*) {
+                const old_storage_index = entity_slot.storage_index;
+                const result = try self.pool.addComponent(
+                    entity_slot.mask_list_index,
+                    entity_slot.storage_index,
+                    component,
+                    data,
+                );
+
+                // Update swapped entity to point to old position (where it was swapped into)
+                if (result.swapped_entity) |swapped| {
+                    const swapped_slot = try self.entity_manager.getSlotUnchecked(swapped);
+                    swapped_slot.storage_index = old_storage_index;
+                }
+
+                // Update slot with new location
+                entity_slot.storage_index = result.storage_index;
+                entity_slot.mask_list_index = result.mask_list_index;
+                return;
+            }
+
+            // Queue when running
             try self.pool.addOrRemoveComponent(
                 entity,
                 entity_slot.mask_list_index,
@@ -96,6 +142,29 @@ pub fn PoolInterfaceType(comptime pool_name: PR.PoolName) type {
 
         pub fn removeComponent(self: *Self, entity: EM.Entity, comptime component: CR.ComponentName) !void {
             const entity_slot = try self.entity_manager.getSlot(entity);
+
+            // Immediate migration when not running (setup phase)
+            if (!self.running.*) {
+                const old_storage_index = entity_slot.storage_index;
+                const result = try self.pool.removeComponent(
+                    entity_slot.mask_list_index,
+                    entity_slot.storage_index,
+                    component,
+                );
+
+                // Update swapped entity to point to old position (where it was swapped into)
+                if (result.swapped_entity) |swapped| {
+                    const swapped_slot = try self.entity_manager.getSlotUnchecked(swapped);
+                    swapped_slot.storage_index = old_storage_index;
+                }
+
+                // Update slot with new location
+                entity_slot.storage_index = result.storage_index;
+                entity_slot.mask_list_index = result.mask_list_index;
+                return;
+            }
+
+            // Queue when running
             try self.pool.addOrRemoveComponent(
                 entity,
                 entity_slot.mask_list_index,

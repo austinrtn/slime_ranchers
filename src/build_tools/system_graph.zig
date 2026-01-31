@@ -129,11 +129,19 @@ fn printExecutionOrder(systems: []const metadata.SystemMetadata, filter: ?[][]co
     std.debug.print("=== SYSTEM EXECUTION ORDER ===\n\n", .{});
 
     var order: usize = 1;
+    var current_phase: ?[]const u8 = null;
 
-    // Print systems in pre-computed execution order
+    // Print systems in pre-computed execution order, grouped by phase
     for (metadata.execution_order) |idx| {
         const sys = systems[idx];
         if (!matchesFilter(sys.name, filter)) continue;
+
+        // Print phase header when phase changes
+        if (current_phase == null or !std.mem.eql(u8, current_phase.?, sys.phase)) {
+            if (current_phase != null) std.debug.print("\n", .{});
+            std.debug.print("--- {s} ---\n", .{sys.phase});
+            current_phase = sys.phase;
+        }
 
         if (sys.has_queries) {
             std.debug.print("{d}. {s}          [has queries]\n", .{ order, sys.name });
@@ -155,7 +163,7 @@ fn printDependencyDetails(systems: []const metadata.SystemMetadata, filter: ?[][
         if (!matchesFilter(sys.name, filter)) continue;
         any_printed = true;
 
-        std.debug.print("{s}:\n", .{sys.name});
+        std.debug.print("{s} (phase: {s}):\n", .{ sys.name, sys.phase });
 
         // Read components
         std.debug.print("  Reads:  ", .{});
@@ -252,12 +260,18 @@ fn printDependencyDetails(systems: []const metadata.SystemMetadata, filter: ?[][
 }
 
 fn printWriteConflicts(systems: []const metadata.SystemMetadata) !void {
-    std.debug.print("=== WRITE-WRITE CONFLICTS ===\n\n", .{});
+    std.debug.print("=== WRITE-WRITE CONFLICTS ===\n", .{});
+    std.debug.print("(Only checked within same phase - systems in different phases run sequentially)\n\n", .{});
 
     var conflicts_found = false;
 
     for (systems, 0..) |sys_i, i| {
         for (systems[i + 1 ..]) |sys_j| {
+            // Skip if systems are in different phases (they run sequentially)
+            if (!std.mem.eql(u8, sys_i.phase, sys_j.phase)) {
+                continue;
+            }
+
             // Find write-write conflicts
             var conflicts: std.ArrayList([]const u8) = .empty;
             defer conflicts.deinit(std.heap.page_allocator);
@@ -292,7 +306,7 @@ fn printWriteConflicts(systems: []const metadata.SystemMetadata) !void {
                 if (!i_before_j and !j_before_i) {
                     conflicts_found = true;
 
-                    std.debug.print("✗ CONFLICT: {s} and {s} both write ", .{ sys_i.name, sys_j.name });
+                    std.debug.print("✗ CONFLICT: {s} and {s} (both in phase '{s}') both write ", .{ sys_i.name, sys_j.name, sys_i.phase });
                     for (conflicts.items, 0..) |comp, idx| {
                         if (idx > 0) std.debug.print(", ", .{});
                         std.debug.print("{s}", .{comp});

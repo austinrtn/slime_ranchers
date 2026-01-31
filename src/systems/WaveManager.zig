@@ -4,10 +4,12 @@ const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
+const Phase = @import("../registries/Phases.zig").Phase;
 
 pub const WaveManager = struct {
     const Self = @This();
     pub const enabled: bool = true;
+    pub const phase: Phase = .PreUpdate;
     pub const runs_before = &.{.Movement, .Animate, .ChangeAnim, .Render};
 
     // Dependency declarations for compile-time system ordering

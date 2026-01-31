@@ -4,21 +4,29 @@ const ComponentRegistry = @import("../registries/ComponentRegistry.zig");
 const Query = @import("../ecs/Query.zig").QueryType;
 const PoolManager = @import("../ecs/PoolManager.zig").PoolManager;
 const raylib = @import("raylib");
+const Phase = @import("../registries/Phases.zig").Phase;
 
 pub const EnergyManager = struct {
     const Self = @This();
     pub const enabled: bool = true;
+    pub const phase: Phase = .Update;
     pub const runs_before = &.{.ChangeAnim};
 
     allocator: std.mem.Allocator,
     active: bool = true,
+    prescient: *Prescient = undefined,
     queries: struct {
-        slimes: Query(.{.read = &.{}, .write = &.{.Energy, .Slime}}),
+        slimes: Query(.{.read = &.{.Attack}, .write = &.{.Energy, .Slime}}),
     },
 
+    pub fn init(self: *Self) !void {
+        self.prescient = try Prescient.getPrescient();
+    }
+
     pub fn update(self: *Self) !void {
-        try self.queries.slimes.forEach(null, struct{
-            pub fn run(_: anytype, c: anytype) !bool {
+        try self.queries.slimes.forEach(self, struct{
+            pub fn run(data: anytype, c: anytype) !bool {
+                _ = data;
                 const energy = c.Energy;
                 const slime = c.Slime;
 

@@ -71,6 +71,7 @@ const MQ = @import("MigrationQueue.zig");
 const MoveDirection = MQ.MoveDirection;
 const MigrationQueueType = MQ.MigrationQueueType;
 const MigrationEntryType = MQ.MigrationEntryType;
+const MigrationResult = MQ.MigrationResult;
 const PoolInterfaceType = @import("PoolInterface.zig").PoolInterfaceType;
 const StorageStrategy = @import("StorageStrategy.zig").StorageStrategy;
 const EOQ = @import("EntityOperationQueue.zig");
@@ -291,8 +292,8 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
         ///
         /// The interface provides a convenient API that combines pool and entity manager
         /// functionality, handling internal bookkeeping automatically.
-        pub fn getInterface(self: *Self, entity_manager: *EM.EntityManager) PoolInterfaceType(NAME) {
-            return PoolInterfaceType(NAME).init(self, entity_manager);
+        pub fn getInterface(self: *Self, entity_manager: *EM.EntityManager, running: *bool) PoolInterfaceType(NAME) {
+            return PoolInterfaceType(NAME).init(self, entity_manager, running);
         }
 
         /// Clears the new archetypes list after queries have processed them.
@@ -316,11 +317,11 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
         ///
         /// ## Returns
         /// - `storage_index`: Index into storage arrays where entity data is stored
-        /// - `archetype_index`: Index of the virtual archetype this entity belongs to
+        /// - `mask_list_index`: Index of the virtual archetype this entity belongs to
         ///
         /// ## Errors
         /// Returns error on allocation failure.
-        pub fn addEntity(self: *Self, entity: EM.Entity, component_data: Builder) !struct { storage_index: u32, archetype_index: u32 } {
+        pub fn addEntity(self: *Self, entity: EM.Entity, component_data: Builder) !struct { storage_index: u32, mask_list_index: u32 } {
             // Build component mask at runtime by checking which optional fields are non-null
             // Required components are always included (enforced by Builder type system)
             var bitmask: MaskManager.Mask = 0;
@@ -403,7 +404,7 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
 
             return .{
                 .storage_index = storage_index,
-                .archetype_index = new_bitmask_map.bitmask_index,
+                .mask_list_index = new_bitmask_map.bitmask_index,
             };
         }
 
@@ -419,7 +420,7 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
         ///
         /// ## Errors
         /// - `EntityPoolMismatch`: If pool_name doesn't match this pool
-        pub fn removeEntity(self: *Self, _: u32, storage_index: u32, pool_name: PoolName) !Entity{
+        pub fn removeEntity(self: *Self, _: u32, storage_index: u32, pool_name: PoolName) !?Entity{
             try validateEntityInPool(pool_name);
 
             const entity = self.storage.entities.items[storage_index] orelse return error.InvalidEntity;
@@ -434,7 +435,9 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
             self.removeFromMaskList(bitmask_map);
             try self.empty_indexes.append(self.allocator, storage_index);
 
-            return entity;
+            // SparseSet pools don't swap entities, so always return null
+            _ = entity;
+            return null;
         }
 
         // ============= Deferred Entity Operations =============
@@ -482,7 +485,7 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
                     .operation = .create,
                     .entity = entry.entity,
                     .storage_index = result.storage_index,
-                    .mask_list_index = result.archetype_index,
+                    .mask_list_index = result.mask_list_index,
                     .swapped_entity = null,
                 });
             }
@@ -621,7 +624,7 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
         ///
         /// ## Errors
         /// - `EntityAlreadyHasComponent`: If entity already has this component
-        pub fn addComponent(self: *Self, storage_index: u32, comptime component: CR.ComponentName, value: CR.getTypeByName(component)) !void {
+        pub fn addComponent(self: *Self, _: u32, storage_index: u32, comptime component: CR.ComponentName, value: CR.getTypeByName(component)) !MigrationResult {
             const bitmask_map = self.getBitmaskMap(storage_index);
             const old_bitmask = self.getBitmask(bitmask_map.bitmask_index);
 
@@ -638,6 +641,14 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
 
             // Store the component data
             comp_storage.* = value;
+
+            // SparseSet: storage_index is stable, no entity swapping
+            return MigrationResult{
+                .entity = self.storage.entities.items[storage_index],
+                .storage_index = storage_index,
+                .mask_list_index = new_bitmask_map.bitmask_index,
+                .swapped_entity = null,
+            };
         }
 
         /// Immediately removes a component from an entity.
@@ -652,7 +663,7 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
         ///
         /// ## Errors
         /// - `EntityDoesNotHaveComponent`: If entity doesn't have this component
-        pub fn removeComponent(self: *Self, storage_index: u32, comptime component: CR.ComponentName) !void {
+        pub fn removeComponent(self: *Self, _: u32, storage_index: u32, comptime component: CR.ComponentName) !MigrationResult {
             const bitmask_map = self.getBitmaskMap(storage_index);
             const bitmask = self.getBitmask(bitmask_map.bitmask_index);
 
@@ -669,6 +680,14 @@ pub fn SparseSetPoolType(comptime config: PoolConfig) type {
 
             // Clear the component data
             comp_storage.* = null;
+
+            // SparseSet: storage_index is stable, no entity swapping
+            return MigrationResult{
+                .entity = self.storage.entities.items[storage_index],
+                .storage_index = storage_index,
+                .mask_list_index = new_bitmask_map.bitmask_index,
+                .swapped_entity = null,
+            };
         }
 
         // ===== Migration Queue =====

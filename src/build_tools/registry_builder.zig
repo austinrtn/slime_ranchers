@@ -257,6 +257,9 @@ pub fn main() !void {
     };
     print("Ensured registries directory exists: {s}\n\n", .{registries_dir});
 
+    // Ensure Phases.zig exists (user-editable, not generated)
+    try ensurePhasesFile(allocator, project_dir);
+
     // Load existing cache
     const cache = try loadCacheFile(allocator, project_dir);
     var new_cache: CacheFile = .{
@@ -1196,6 +1199,7 @@ fn writeFactoryStaticFunctions(allocator: std.mem.Allocator, fs: *FileStorage) !
 
 const SystemMetadataInfo = struct {
     name: []const u8,
+    phase: []const u8,
     reads: ArrayList([]const u8),
     writes: ArrayList([]const u8),
     runs_before: ArrayList([]const u8),
@@ -1244,6 +1248,34 @@ fn parseIndirectComponents(allocator: std.mem.Allocator, content: []const u8, de
     }
 
     return result;
+}
+
+/// Parse phase declaration from system file
+/// Returns the phase name as a string, or error if not found
+fn parsePhaseDecl(content: []const u8) ![]const u8 {
+    // Look for "pub const phase" pattern
+    const search_str = "pub const phase";
+    const start_idx = std.mem.indexOf(u8, content, search_str) orelse return error.MissingPhase;
+    const after_decl = content[start_idx + search_str.len ..];
+
+    // Find the = sign
+    const eq_idx = std.mem.indexOf(u8, after_decl, "=") orelse return error.MissingPhase;
+    const after_eq = after_decl[eq_idx + 1 ..];
+
+    // Find the phase value - looking for .PhaseName pattern
+    const trimmed = std.mem.trim(u8, after_eq, " \t\r\n");
+    if (!std.mem.startsWith(u8, trimmed, ".")) return error.MissingPhase;
+
+    // Extract phase name until semicolon or whitespace
+    var end: usize = 1;
+    while (end < trimmed.len and trimmed[end] != ';' and trimmed[end] != ' ' and trimmed[end] != '\n' and trimmed[end] != '\r') {
+        end += 1;
+    }
+
+    const phase_name = trimmed[1..end];
+    if (phase_name.len == 0) return error.MissingPhase;
+
+    return phase_name;
 }
 
 /// Parse query declarations from system files
@@ -1433,6 +1465,12 @@ fn buildSystemMetadata(allocator: std.mem.Allocator, fs: *FileStorage, project_d
         const query_components = try parseQueryComponents(allocator, content);
         var reads = query_components.reads;
         var writes = query_components.writes;
+        errdefer {
+            for (reads.items) |item| allocator.free(item);
+            reads.deinit(allocator);
+            for (writes.items) |item| allocator.free(item);
+            writes.deinit(allocator);
+        }
 
         // Parse indirect reads/writes
         var indirect_reads = try parseIndirectComponents(allocator, content, "indirect_reads");
@@ -1449,6 +1487,13 @@ fn buildSystemMetadata(allocator: std.mem.Allocator, fs: *FileStorage, project_d
         indirect_reads.deinit(allocator);
         indirect_writes.deinit(allocator);
 
+        // Parse phase declaration (required)
+        const phase = parsePhaseDecl(content) catch {
+            print("\n  ERROR: System '{s}' is missing required 'pub const phase: Phase = .XXX;' declaration!\n", .{file_data.typeName});
+            print("         Add a phase declaration (e.g., 'pub const phase: Phase = .Update;')\n\n", .{});
+            return error.MissingPhaseDeclaration;
+        };
+
         // Parse runs_before/runs_after
         const runs_before = parseDependencyDecl(allocator, content, "runs_before") catch blk: {
             var empty: ArrayList([]const u8) = .empty;
@@ -1460,6 +1505,10 @@ fn buildSystemMetadata(allocator: std.mem.Allocator, fs: *FileStorage, project_d
         };
 
         var runs_before_list: ArrayList([]const u8) = .empty;
+        errdefer {
+            for (runs_before_list.items) |item| allocator.free(item);
+            runs_before_list.deinit(allocator);
+        }
         for (runs_before) |dep| {
             try runs_before_list.append(allocator, try allocator.dupe(u8, dep));
         }
@@ -1467,6 +1516,10 @@ fn buildSystemMetadata(allocator: std.mem.Allocator, fs: *FileStorage, project_d
         allocator.free(runs_before);
 
         var runs_after_list: ArrayList([]const u8) = .empty;
+        errdefer {
+            for (runs_after_list.items) |item| allocator.free(item);
+            runs_after_list.deinit(allocator);
+        }
         for (runs_after) |dep| {
             try runs_after_list.append(allocator, try allocator.dupe(u8, dep));
         }
@@ -1477,6 +1530,7 @@ fn buildSystemMetadata(allocator: std.mem.Allocator, fs: *FileStorage, project_d
 
         try metadata_list.append(allocator, .{
             .name = file_data.typeName,
+            .phase = phase,
             .reads = reads,
             .writes = writes,
             .runs_before = runs_before_list,
@@ -1698,6 +1752,7 @@ fn writeSystemMetadataFile(allocator: std.mem.Allocator, metadata: []const Syste
     try fw.writeLine(allocator, "");
     try fw.writeLine(allocator, "pub const SystemMetadata = struct {");
     try fw.writeLine(allocator, "    name: []const u8,");
+    try fw.writeLine(allocator, "    phase: []const u8,");
     try fw.writeLine(allocator, "    reads: []const []const u8,");
     try fw.writeLine(allocator, "    writes: []const []const u8,");
     try fw.writeLine(allocator, "    runs_before: []const []const u8,");
@@ -1710,6 +1765,7 @@ fn writeSystemMetadataFile(allocator: std.mem.Allocator, metadata: []const Syste
     for (metadata) |meta| {
         try fw.writeLine(allocator, "    .{");
         try fw.writeFmt(allocator, "        .name = \"{s}\",\n", .{meta.name});
+        try fw.writeFmt(allocator, "        .phase = \"{s}\",\n", .{meta.phase});
 
         // Reads
         try fw.write(allocator, "        .reads = &.{");
@@ -1774,6 +1830,7 @@ fn writeEmptySystemMetadata(allocator: std.mem.Allocator, project_dir: []const u
     try fw.writeLine(allocator, "");
     try fw.writeLine(allocator, "pub const SystemMetadata = struct {");
     try fw.writeLine(allocator, "    name: []const u8,");
+    try fw.writeLine(allocator, "    phase: []const u8,");
     try fw.writeLine(allocator, "    reads: []const []const u8,");
     try fw.writeLine(allocator, "    writes: []const []const u8,");
     try fw.writeLine(allocator, "    runs_before: []const []const u8,");
@@ -1787,4 +1844,44 @@ fn writeEmptySystemMetadata(allocator: std.mem.Allocator, project_dir: []const u
     try fw.writeLine(allocator, "pub const execution_order: []const usize = &.{};");
 
     try fw.saveFile();
+}
+
+/// Ensure Phases.zig exists with default template if missing
+/// This is a user-editable file, so we only create it if it doesn't exist
+fn ensurePhasesFile(allocator: std.mem.Allocator, project_dir: []const u8) !void {
+    const phases_path = try std.fs.path.join(allocator, &.{ project_dir, "src", "registries", "Phases.zig" });
+    defer allocator.free(phases_path);
+
+    // Check if file already exists
+    std.fs.cwd().access(phases_path, .{}) catch {
+        // File doesn't exist, create it with default template
+        print("Creating default Phases.zig...\n", .{});
+
+        var fw = FileWriter{ .filePath = phases_path };
+        defer fw.deinit(allocator);
+
+        try fw.writeLine(allocator, "// User-defined execution phases");
+        try fw.writeLine(allocator, "// Edit this file to define your game's phase structure");
+        try fw.writeLine(allocator, "");
+        try fw.writeLine(allocator, "pub const Phase = enum {");
+        try fw.writeLine(allocator, "    PreUpdate,");
+        try fw.writeLine(allocator, "    Update,");
+        try fw.writeLine(allocator, "    PostUpdate,");
+        try fw.writeLine(allocator, "    Render,");
+        try fw.writeLine(allocator, "};");
+        try fw.writeLine(allocator, "");
+        try fw.writeLine(allocator, "/// Order in which phases execute");
+        try fw.writeLine(allocator, "pub const phase_sequence: []const Phase = &.{");
+        try fw.writeLine(allocator, "    .PreUpdate,");
+        try fw.writeLine(allocator, "    .Update,");
+        try fw.writeLine(allocator, "    .PostUpdate,");
+        try fw.writeLine(allocator, "    .Render,");
+        try fw.writeLine(allocator, "};");
+
+        try fw.saveFile();
+        print("  Created: {s}\n\n", .{phases_path});
+        return;
+    };
+
+    // File exists, nothing to do
 }
