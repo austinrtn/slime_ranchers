@@ -29,6 +29,7 @@ pub const EnergyManager = struct {
                 _ = data;
                 const energy = c.Energy;
                 const slime = c.Slime;
+                const atk = c.Attack;
 
                 // Recover energy while idling
                 if(energy.energy < energy.max_energy and (slime.state == .idling or slime.state == .recovering)) {
@@ -54,13 +55,14 @@ pub const EnergyManager = struct {
                 }
 
                 // One time energy cost for attack
-                else if(slime.state == .attacking and !energy.attack_reducted) {
+                if(slime.state == .attacking and atk.can_attack and !energy.attack_reducted) {
                     energy.energy -= energy.attack_cost;
                     energy.attack_reducted = true;
+                    std.debug.print("Here\n", .{});
                 }
 
                 //Reset attack reducted flag after attack finished
-                if(slime.state != .attacking and energy.attack_reducted) {
+                if(atk.can_attack and energy.attack_reducted) {
                     energy.attack_reducted = false;
                 }
 

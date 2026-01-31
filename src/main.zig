@@ -83,12 +83,12 @@ pub fn main() !void {
         text_comp.content = content;
         
         if(slime.state == last_state) {
-            state_counter += 1;
-            std.debug.print("\r{s}: {d}", .{@tagName(slime.state), state_counter});
+//            state_counter += 1;
+ //           std.debug.print("\r{s}: {d}", .{@tagName(slime.state), state_counter});
         } else {
             state_counter = 0;
             last_state = slime.state;
-            std.debug.print("\n{s}{d}", .{@tagName(slime.state), state_counter});
+  //          std.debug.print("\n{s}{d}", .{@tagName(slime.state), state_counter});
         }
         state_text_comp.content = @tagName(slime.state);
         if(initing) {
